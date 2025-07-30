@@ -1,0 +1,28 @@
+node_modules/
+dist/
+build/
+.cache/
+.vscode/
+.idea/
+*.log
+*.tgz
+.DS_Store
+Thumbs.db
+
+# Extension build outputs
+web-ext-artifacts/
+*.zip
+*.crx
+*.xpi
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+coverage/
+*.lcov

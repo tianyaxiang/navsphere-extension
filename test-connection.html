@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NavSphere 实例连接测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NavSphere 实例连接测试工具</h1>
+        <p>此工具帮助您测试 NavSphere 实例的连接性，用于调试扩展连接问题。</p>
+        
+        <div>
+            <input type="url" id="urlInput" placeholder="输入 NavSphere 实例 URL" style="width: 400px;">
+            <button onclick="testConnection()">测试连接</button>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const url = document.getElementById('urlInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            if (!url) {
+                showResult('请输入 URL', 'error');
+                return;
+            }
+
+            showResult('正在测试连接...', 'info');
+            
+            try {
+                // 清理URL
+                const cleanUrl = url.replace(/\/$/, '');
+                
+                // 测试结果收集
+                const results = [];
+                
+                // 1. URL格式检查
+                try {
+                    const testUrl = new URL(url);
+                    results.push(`✅ URL格式正确: ${testUrl.protocol}//${testUrl.host}`);
+                } catch (e) {
+                    results.push(`❌ URL格式错误: ${e.message}`);
+                    showResult(results.join('\n'), 'error');
+                    return;
+                }
+                
+                // 2. 测试多个可能的端点
+                const endpoints = [
+                    `${cleanUrl}/api/health`,
+                    `${cleanUrl}/health`,
+                    `${cleanUrl}/api/status`,
+                    `${cleanUrl}/`
+                ];
+                
+                let foundNavSphere = false;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        results.push(`\n🔍 测试端点: ${endpoint}`);
+                        
+                        const response = await fetch(endpoint, {
+                            method: 'GET',
+                            mode: 'cors',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            signal: AbortSignal.timeout(10000)
+                        });
+                        
+                        results.push(`   状态码: ${response.status} ${response.statusText}`);
+                        results.push(`   Content-Type: ${response.headers.get('content-type') || '未设置'}`);
+                        
+                        if (response.ok) {
+                            const contentType = response.headers.get('content-type');
+                            
+                            if (contentType && contentType.includes('application/json')) {
+                                try {
+                                    const data = await response.json();
+                                    results.push(`   响应数据: ${JSON.stringify(data, null, 2)}`);
+                                    
+                                    // 检查是否为NavSphere
+                                    if (data.service === 'NavSphere' || 
+                                        data.name === 'NavSphere' || 
+                                        data.app === 'NavSphere') {
+                                        results.push(`   ✅ 发现NavSphere实例!`);
+                                        foundNavSphere = true;
+                                    }
+                                } catch (jsonError) {
+                                    results.push(`   ❌ JSON解析失败: ${jsonError.message}`);
+                                }
+                            } else {
+                                // 尝试读取HTML内容
+                                const text = await response.text();
+                                const excerpt = text.substring(0, 200);
+                                results.push(`   响应内容 (前200字符): ${excerpt}...`);
+                                
+                                // 检查HTML中的NavSphere标识
+                                if (text.includes('NavSphere') || 
+                                    text.includes('navsphere') ||
+                                    text.includes('导航球')) {
+                                    results.push(`   ✅ 在HTML中发现NavSphere标识!`);
+                                    foundNavSphere = true;
+                                }
+                            }
+                        } else {
+                            results.push(`   ❌ 请求失败`);
+                        }
+                        
+                    } catch (error) {
+                        results.push(`   ❌ 连接失败: ${error.message}`);
+                        
+                        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                            results.push(`   💡 可能原因: CORS跨域限制或网络问题`);
+                        }
+                    }
+                }
+                
+                // 最终结果
+                results.push(`\n📋 测试总结:`);
+                if (foundNavSphere) {
+                    results.push(`✅ 成功检测到 NavSphere 实例!`);
+                    results.push(`✅ 此实例应该可以在扩展中正常使用`);
+                    showResult(results.join('\n'), 'success');
+                } else {
+                    results.push(`❌ 未能检测到 NavSphere 实例`);
+                    results.push(`\n可能的问题:`);
+                    results.push(`• 该网站不是基于 NavSphere 搭建`);
+                    results.push(`• API 端点不存在或配置错误`);
+                    results.push(`• CORS 跨域访问被阻止`);
+                    results.push(`• 网站无法访问或响应超时`);
+                    showResult(results.join('\n'), 'error');
+                }
+                
+            } catch (error) {
+                showResult(`测试过程中发生错误:\n${error.message}`, 'error');
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+
+        // 允许回车键触发测试
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testConnection();
+            }
+        });
+        
+        // 示例URL
+        document.getElementById('urlInput').value = 'https://your-navsphere.vercel.app';
+    </script>
+</body>
+</html>
