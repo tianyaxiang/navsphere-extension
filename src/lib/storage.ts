@@ -27,8 +27,8 @@ const DEFAULT_SETTINGS: ExtensionSettings = {
 const DEFAULT_INSTANCE: NavSphereInstance = {
   id: 'default-official',
   name: '官方实例',
-  url: 'https://dh.leti.ltd/',
-  apiUrl: 'https://dh.leti.ltd/api',
+  url: 'https://dh.leti.ltd',
+  apiUrl: 'https://dh.leti.ltd',
   isActive: true,
   favicon: 'https://dh.leti.ltd/favicon.ico',
   description: 'NavSphere 官方实例',
@@ -44,13 +44,13 @@ export class StorageManager {
   static async getInstances(): Promise<NavSphereInstance[]> {
     const result = await chrome.storage.sync.get(STORAGE_KEYS.INSTANCES)
     const instances = result[STORAGE_KEYS.INSTANCES] || []
-    
+
     // 如果没有实例，自动添加默认实例
     if (instances.length === 0) {
       await this.setInstances([DEFAULT_INSTANCE])
       return [DEFAULT_INSTANCE]
     }
-    
+
     return instances
   }
 
@@ -130,12 +130,12 @@ export class StorageManager {
   static async initializeDefaultInstance(): Promise<void> {
     const instances = await chrome.storage.sync.get(STORAGE_KEYS.INSTANCES)
     const existingInstances = instances[STORAGE_KEYS.INSTANCES] || []
-    
+
     // 检查是否已存在默认实例
-    const hasDefaultInstance = existingInstances.some((instance: NavSphereInstance) => 
+    const hasDefaultInstance = existingInstances.some((instance: NavSphereInstance) =>
       instance.id === DEFAULT_INSTANCE.id
     )
-    
+
     if (!hasDefaultInstance) {
       existingInstances.push(DEFAULT_INSTANCE)
       await this.setInstances(existingInstances)
