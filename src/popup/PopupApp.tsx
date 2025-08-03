@@ -18,6 +18,9 @@ export default function PopupApp() {
   const [customTitle, setCustomTitle] = useState('')
   const [customDescription, setCustomDescription] = useState('')
   const [loading, setLoading] = useState(false)
+  const [categoriesLoading, setCategoriesLoading] = useState(false)
+  const [categoriesError, setCategoriesError] = useState<string | null>(null)
+  const [isRestoredSelection, setIsRestoredSelection] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -103,24 +106,69 @@ export default function PopupApp() {
   }
 
   async function loadNavigationData(instance: NavSphereInstance) {
+    setCategoriesLoading(true)
+    setCategoriesError(null)
     try {
       const api = new NavSphereAPI(instance)
       const data = await api.getNavigationData()
       setNavigationData(data)
       
-      // 设置默认分类
-      if (data.navigationItems.length > 0 && !selectedCategoryId) {
-        handleCategorySelect(data.navigationItems[0].id, data)
-      }
+      // 尝试恢复上次选择的分类
+      await restoreLastSelectedCategory(instance.id, data)
     } catch (err) {
       console.error('Failed to load navigation data:', err)
       // 如果是认证相关错误，提示用户去设置页面认证
       if (err instanceof Error && (err.message.includes('401') || err.message.includes('403'))) {
-        setError('需要认证，请先在设置页面完成GitHub登录')
+        setCategoriesError('需要认证，请先在设置页面完成GitHub登录')
       } else {
-        setError('加载导航数据失败，请检查网络连接或实例配置')
+        setCategoriesError('加载导航数据失败，请检查网络连接或实例配置')
+      }
+    } finally {
+      setCategoriesLoading(false)
+    }
+  }
+
+  // 恢复上次选择的分类
+  async function restoreLastSelectedCategory(instanceId: string, navigationData: NavigationData) {
+    try {
+      // 从存储中获取上次选择的分类
+      const result = await chrome.storage.local.get(`lastSelectedCategory_${instanceId}`)
+      const lastCategoryId = result[`lastSelectedCategory_${instanceId}`]
+      
+      if (lastCategoryId && isValidCategoryId(lastCategoryId, navigationData)) {
+        // 如果上次选择的分类仍然存在，则选择它
+        await handleCategorySelect(lastCategoryId, navigationData, true)
+        console.log('恢复上次选择的分类:', lastCategoryId)
+      } else if (navigationData.navigationItems.length > 0) {
+        // 否则选择第一个分类
+        await handleCategorySelect(navigationData.navigationItems[0].id, navigationData, false)
+        console.log('选择默认分类:', navigationData.navigationItems[0].id)
+      }
+    } catch (error) {
+      console.error('恢复上次选择的分类失败:', error)
+      // 出错时选择第一个分类
+      if (navigationData.navigationItems.length > 0) {
+        await handleCategorySelect(navigationData.navigationItems[0].id, navigationData, false)
       }
     }
+  }
+
+  // 检查分类ID是否仍然有效
+  function isValidCategoryId(categoryId: string, navigationData: NavigationData): boolean {
+    for (const category of navigationData.navigationItems) {
+      if (category.id === categoryId) {
+        return true
+      }
+      
+      if (category.subCategories) {
+        for (const subCategory of category.subCategories) {
+          if (subCategory.id === categoryId) {
+            return true
+          }
+        }
+      }
+    }
+    return false
   }
 
   async function handleQuickAdd() {
@@ -154,6 +202,16 @@ export default function PopupApp() {
       await api.addNavigationItem(selectedCategoryId, bookmarkData)
       console.log('API调用成功')
 
+      // 保存成功使用的分类作为下次的默认选择
+      try {
+        await chrome.storage.local.set({
+          [`lastSelectedCategory_${selectedInstance.id}`]: selectedCategoryId
+        })
+        console.log('保存成功使用的分类:', selectedCategoryId)
+      } catch (error) {
+        console.error('保存分类选择失败:', error)
+      }
+
       setSuccess(true)
       
       // 清除会话数据
@@ -176,8 +234,9 @@ export default function PopupApp() {
     }
   }
 
-  function handleCategorySelect(categoryId: string, navigationData: NavigationData) {
+  async function handleCategorySelect(categoryId: string, navigationData: NavigationData, isRestored: boolean = false) {
     setSelectedCategoryId(categoryId)
+    setIsRestoredSelection(isRestored)
     
     // 查找分类路径
     let categoryPath = ''
@@ -200,6 +259,18 @@ export default function PopupApp() {
     }
     
     setSelectedCategoryPath(categoryPath)
+    
+    // 保存当前选择到存储中（只有在用户主动选择时才保存）
+    if (selectedInstance && !isRestored) {
+      try {
+        await chrome.storage.local.set({
+          [`lastSelectedCategory_${selectedInstance.id}`]: categoryId
+        })
+        console.log('保存分类选择:', categoryId)
+      } catch (error) {
+        console.error('保存分类选择失败:', error)
+      }
+    }
   }
 
   function openOptionsPage() {
@@ -391,20 +462,72 @@ export default function PopupApp() {
             </div>
 
             {/* 分类选择 */}
-            {navigationData ? (
-              <div>
-                <Label>选择分类</Label>
-                {selectedCategoryPath && (
-                  <p className="text-xs text-muted-foreground mt-1 mb-2">
+            <div>
+              <Label>选择分类</Label>
+              {selectedCategoryPath && (
+                <div className="flex items-center gap-2 mt-1 mb-2">
+                  <p className="text-xs text-muted-foreground">
                     当前选择: {selectedCategoryPath}
                   </p>
-                )}
+                  {isRestoredSelection && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                      记住的选择
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              {categoriesLoading ? (
+                <div className="mt-2 space-y-2">
+                  {/* 加载状态提示 */}
+                  <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    <span className="text-sm text-blue-600">加载分类中...</span>
+                  </div>
+                  
+                  {/* 骨架屏效果 */}
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-12 bg-gray-200 rounded-md"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : categoriesError ? (
+                <div className="mt-2 p-4 bg-red-50 border border-red-200 rounded-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <X className="w-4 h-4 text-red-600" />
+                    <span className="text-sm font-medium text-red-800">加载分类失败</span>
+                  </div>
+                  <p className="text-xs text-red-700 mb-3">{categoriesError}</p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => selectedInstance && loadNavigationData(selectedInstance)}
+                      className="flex-1"
+                    >
+                      重试
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={openOptionsPage}
+                      className="flex-1"
+                    >
+                      <Settings className="w-4 h-4 mr-1" />
+                      设置
+                    </Button>
+                  </div>
+                </div>
+              ) : navigationData ? (
                 <div className="mt-2 max-h-40 overflow-y-auto custom-scrollbar">
                   {navigationData.navigationItems.map((category) => (
                     <div key={category.id}>
                       {/* 一级分类 */}
                       <div
-                        onClick={() => handleCategorySelect(category.id, navigationData)}
+                        onClick={() => handleCategorySelect(category.id, navigationData, false)}
                         className={`p-3 rounded-md cursor-pointer transition-colors ${
                           selectedCategoryId === category.id
                             ? 'bg-primary text-primary-foreground'
@@ -425,7 +548,7 @@ export default function PopupApp() {
                           {category.subCategories.map((subCategory) => (
                             <div
                               key={subCategory.id}
-                              onClick={() => handleCategorySelect(subCategory.id, navigationData)}
+                              onClick={() => handleCategorySelect(subCategory.id, navigationData, false)}
                               className={`p-2 rounded-md cursor-pointer transition-colors text-sm ${
                                 selectedCategoryId === subCategory.id
                                   ? 'bg-primary text-primary-foreground'
@@ -446,27 +569,37 @@ export default function PopupApp() {
                     </div>
                   ))}
                 </div>
-              </div>
-            ) : (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <ExternalLink className="w-4 h-4 text-yellow-600" />
-                  <span className="text-sm font-medium text-yellow-800">无法加载分类数据</span>
+              ) : (
+                <div className="mt-2 p-4 bg-gray-50 border border-gray-200 rounded-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ExternalLink className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-800">暂无分类数据</span>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-3">
+                    请检查实例配置或网络连接
+                  </p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => selectedInstance && loadNavigationData(selectedInstance)}
+                      className="flex-1"
+                    >
+                      重新加载
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={openOptionsPage}
+                      className="flex-1"
+                    >
+                      <Settings className="w-4 h-4 mr-1" />
+                      设置
+                    </Button>
+                  </div>
                 </div>
-                <p className="text-xs text-yellow-700 mb-3">
-                  可能原因：实例需要认证或网络连接问题
-                </p>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={openOptionsPage}
-                  className="w-full"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  去设置页面配置
-                </Button>
-              </div>
-            )}
+              )}
+            </div>
 
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -480,7 +613,7 @@ export default function PopupApp() {
             <div className="flex gap-2">
               <Button
                 onClick={handleQuickAdd}
-                disabled={loading || !selectedCategoryId}
+                disabled={loading || categoriesLoading || !selectedCategoryId || !!categoriesError}
                 className="flex-1"
               >
                 {loading ? (
@@ -488,7 +621,7 @@ export default function PopupApp() {
                 ) : (
                   <Plus className="w-4 h-4 mr-2" />
                 )}
-                {loading ? '添加中...' : '添加'}
+                {loading ? '添加中...' : categoriesLoading ? '加载中...' : '添加'}
               </Button>
               
               <Button
