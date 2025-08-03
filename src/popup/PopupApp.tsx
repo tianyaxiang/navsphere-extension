@@ -334,6 +334,8 @@ export default function PopupApp() {
       return
     }
 
+    // 移除认证状态检查，允许未认证的实例提交站点
+
     // 如果图标为空且不在加载中，显示错误
     if ((!customIcon || !customIcon.trim()) && !metadataLoading) {
       setError('图标地址是必填字段，请等待自动获取或手动输入')
@@ -344,10 +346,11 @@ export default function PopupApp() {
     setError(null)
 
     try {
-      console.log('开始添加书签')
-      console.log('选中实例:', selectedInstance)
-      console.log('页面信息:', pageInfo)
-      console.log('选中分类ID:', selectedCategoryId)
+      console.log('🚀 开始添加书签')
+      console.log('🏠 选中实例:', selectedInstance.name, selectedInstance.apiUrl)
+      console.log('📄 页面信息:', pageInfo)
+      console.log('📂 选中分类ID:', selectedCategoryId)
+      console.log('🔐 认证状态:', selectedInstance.authConfig.isAuthenticated)
 
       const bookmarkData = {
         title: (customTitle && customTitle.trim()) || pageInfo.title,
@@ -355,15 +358,29 @@ export default function PopupApp() {
         description: (customDescription && customDescription.trim()) || pageInfo.description || '',
         icon: (customIcon && customIcon.trim()) || pageInfo.favicon || '',
       }
-      console.log('书签数据:', bookmarkData)
-      console.log('customTitle:', customTitle)
-      console.log('customDescription:', customDescription)
-      console.log('pageInfo:', pageInfo)
+
+      console.log('📋 最终书签数据:', bookmarkData)
+      console.log('📝 表单数据详情:')
+      console.log('  - customTitle:', customTitle)
+      console.log('  - customDescription:', customDescription)
+      console.log('  - customIcon:', customIcon)
+      console.log('  - pageInfo:', pageInfo)
+
+      // 最后验证数据完整性
+      if (!bookmarkData.title) {
+        throw new Error('书签标题不能为空')
+      }
+      if (!bookmarkData.href) {
+        throw new Error('书签链接不能为空')
+      }
+      if (!bookmarkData.icon) {
+        throw new Error('书签图标不能为空')
+      }
 
       const api = new NavSphereAPI(selectedInstance)
-      console.log('调用API添加书签...')
+      console.log('📡 调用API添加书签...')
       await api.addNavigationItem(selectedCategoryId, bookmarkData)
-      console.log('API调用成功')
+      console.log('✅ API调用成功')
 
       // 保存成功使用的分类作为下次的默认选择
       try {
@@ -385,12 +402,23 @@ export default function PopupApp() {
         window.close()
       }, 2000)
     } catch (err) {
-      console.error('Failed to add item:', err)
-      // 如果是认证相关错误，提示用户去设置页面认证
-      if (err instanceof Error && (err.message.includes('401') || err.message.includes('403'))) {
-        setError('需要认证，请先在设置页面完成GitHub登录')
+      console.error('❌ Failed to add item:', err)
+
+      // 详细的错误处理
+      if (err instanceof Error) {
+        console.error('错误详情:', err.message)
+
+        if (err.message.includes('401') || err.message.includes('403') || err.message.includes('未认证')) {
+          setError('需要认证，请先在设置页面完成GitHub登录')
+        } else if (err.message.includes('网络') || err.message.includes('Network') || err.message.includes('fetch')) {
+          setError('网络连接失败，请检查网络连接和实例配置')
+        } else if (err.message.includes('分类ID') || err.message.includes('标题') || err.message.includes('链接')) {
+          setError(`数据验证失败：${err.message}`)
+        } else {
+          setError(`添加失败：${err.message}`)
+        }
       } else {
-        setError('添加失败，请检查网络连接或实例配置')
+        setError('添加失败，发生未知错误')
       }
     } finally {
       setLoading(false)

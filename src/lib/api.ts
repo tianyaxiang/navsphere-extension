@@ -9,7 +9,7 @@ export class NavSphereAPI {
 
   private async request(endpoint: string, options: RequestInit = {}) {
     const url = `${this.instance.apiUrl}${endpoint}`
-    const headers = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options.headers,
     }
@@ -18,29 +18,46 @@ export class NavSphereAPI {
       headers['Authorization'] = `Bearer ${this.instance.authConfig.accessToken}`
       console.log('添加认证头:', `Bearer ${this.instance.authConfig.accessToken.slice(0, 10)}...`)
     } else {
-      console.log('没有认证token')
+      console.log('⚠️ 没有认证token - 这可能导致请求失败')
     }
 
-    console.log('发起请求:', url)
-    console.log('请求选项:', { ...options, headers })
+    console.log('🚀 发起请求:', url)
+    console.log('📋 请求选项:', { ...options, headers })
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    })
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      })
 
-    console.log('响应状态:', response.status, response.statusText)
-    console.log('响应头:', [...response.headers.entries()])
+      console.log('📡 响应状态:', response.status, response.statusText)
+      console.log('📋 响应头:', [...response.headers.entries()])
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API请求失败:', response.status, response.statusText, errorText)
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+      if (!response.ok) {
+        let errorText = ''
+        try {
+          errorText = await response.text()
+        } catch (e) {
+          errorText = '无法读取错误响应'
+        }
+        console.error('❌ API请求失败:', response.status, response.statusText, errorText)
+        throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`)
+      }
+
+      let result
+      try {
+        result = await response.json()
+        console.log('✅ 响应数据:', result)
+      } catch (e) {
+        console.log('⚠️ 响应不是JSON格式，返回空对象')
+        result = {}
+      }
+      
+      return result
+    } catch (error) {
+      console.error('🔥 网络请求异常:', error)
+      throw error
     }
-
-    const result = await response.json()
-    console.log('响应数据:', result)
-    return result
   }
 
   async checkHealth(): Promise<boolean> {
@@ -58,28 +75,48 @@ export class NavSphereAPI {
   }
 
   async addNavigationItem(categoryId: string, item: Omit<NavigationSubItem, 'id' | 'enabled'>): Promise<void> {
-    console.log('NavSphereAPI.addNavigationItem - 开始添加书签')
-    console.log('分类ID:', categoryId)
-    console.log('书签项目:', item)
+    console.log('🚀 NavSphereAPI.addNavigationItem - 开始添加书签')
+    console.log('📂 分类ID:', categoryId)
+    console.log('📄 书签项目:', item)
+    
+    // 验证必要字段
+    if (!categoryId || !categoryId.trim()) {
+      throw new Error('分类ID不能为空')
+    }
+    
+    if (!item.title || !item.title.trim()) {
+      throw new Error('书签标题不能为空')
+    }
+    
+    if (!item.href || !item.href.trim()) {
+      throw new Error('书签链接不能为空')
+    }
+    
+    // 移除认证状态验证，允许未认证的实例提交站点
     
     const newItem: NavigationSubItem = {
       id: `item-${Date.now()}`,
       enabled: true,
       ...item,
     }
-    console.log('处理后的书签项目:', newItem)
+    console.log('✨ 处理后的书签项目:', newItem)
 
     const endpoint = `/api/navigation/${categoryId}/items`
-    console.log('请求端点:', `${this.instance.apiUrl}${endpoint}`)
-    console.log('请求实例:', this.instance)
+    console.log('🎯 请求端点:', `${this.instance.apiUrl}${endpoint}`)
+    console.log('🏠 请求实例:', this.instance.name)
     
-    const result = await this.request(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(newItem),
-    })
-    
-    console.log('API响应:', result)
-    return result
+    try {
+      const result = await this.request(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(newItem),
+      })
+      
+      console.log('✅ 书签添加成功，API响应:', result)
+      return result
+    } catch (error) {
+      console.error('❌ 添加书签失败:', error)
+      throw error
+    }
   }
 
   async updateNavigationData(data: NavigationData): Promise<void> {
