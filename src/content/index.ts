@@ -148,6 +148,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         })
       break
 
+    case 'FETCH_WEBSITE_METADATA':
+      // 通过API获取网站元数据
+      fetchWebsiteMetadata(message.url)
+        .then(metadata => {
+          sendResponse({ success: true, data: metadata })
+        })
+        .catch(error => {
+          console.error('API获取网站元数据失败:', error)
+          sendResponse({ success: false, error: error.message })
+        })
+      break
+
     case 'HIGHLIGHT_ELEMENT':
       // 高亮页面元素（用于调试）
       highlightElement(message.selector)

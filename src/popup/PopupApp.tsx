@@ -17,16 +17,129 @@ export default function PopupApp() {
   const [selectedCategoryPath, setSelectedCategoryPath] = useState<string>('')
   const [customTitle, setCustomTitle] = useState('')
   const [customDescription, setCustomDescription] = useState('')
+  const [customIcon, setCustomIcon] = useState('')
   const [loading, setLoading] = useState(false)
   const [categoriesLoading, setCategoriesLoading] = useState(false)
   const [categoriesError, setCategoriesError] = useState<string | null>(null)
   const [isRestoredSelection, setIsRestoredSelection] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [metadataLoading, setMetadataLoading] = useState(false)
 
   useEffect(() => {
     initializePopup()
   }, [])
+
+  // 通过API获取网站元数据
+  async function fetchMetadataFromAPI(url: string, instance: NavSphereInstance, fallbackFavicon?: string) {
+    console.log('fetchMetadataFromAPI 被调用:', { url, instance: instance.name, isAuthenticated: instance.authConfig?.isAuthenticated, fallbackFavicon })
+
+    // 验证URL
+    if (!url || !url.trim()) {
+      console.error('URL为空，无法调用API')
+      return
+    }
+
+    // 验证URL格式
+    try {
+      const urlObj = new URL(url)
+      // 检查是否为特殊协议页面
+      if (['chrome:', 'chrome-extension:', 'about:', 'moz-extension:', 'edge:', 'safari-extension:'].some(protocol => urlObj.protocol.startsWith(protocol.replace(':', '')))) {
+        console.log('跳过特殊协议页面:', url)
+        if (fallbackFavicon) {
+          setMetadataLoading(true)
+          setTimeout(() => {
+            setCustomIcon(fallbackFavicon)
+            setMetadataLoading(false)
+          }, 200)
+        }
+        return
+      }
+    } catch (error) {
+      console.error('URL格式无效:', url, error)
+      return
+    }
+
+    setMetadataLoading(true)
+    try {
+      console.log('通过API获取网站元数据:', url)
+
+      // 尝试通过内容脚本获取元数据
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      if (tab && tab.id) {
+        try {
+          // 调用内容脚本中的fetchWebsiteMetadata函数
+          const response = await chrome.tabs.sendMessage(tab.id, {
+            type: 'FETCH_WEBSITE_METADATA',
+            url: url
+          })
+
+          if (response && response.success) {
+            const metadata = response.data
+            console.log('API返回的元数据:', metadata)
+
+            // 更新描述和图标
+            if (metadata.description) {
+              setCustomDescription(metadata.description)
+            }
+            if (metadata.icon) {
+              setCustomIcon(metadata.icon)
+            }
+            return
+          }
+        } catch (error) {
+          console.log('通过内容脚本获取元数据失败，尝试直接API调用:', error)
+        }
+      }
+
+      // 如果内容脚本方式失败，直接调用API
+      const response = await fetch(`${instance.apiUrl}/api/website-metadata`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${instance.authConfig?.accessToken}`,
+        },
+        body: JSON.stringify({ url }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API请求失败: ${response.status} ${response.statusText}`)
+      }
+
+      const metadata = await response.json()
+      console.log('API返回的元数据:', metadata)
+
+      // 更新描述和图标
+      if (metadata.description) {
+        setCustomDescription(metadata.description)
+      }
+      if (metadata.icon) {
+        setCustomIcon(metadata.icon)
+      }
+    } catch (error) {
+      console.error('API获取元数据失败:', error)
+
+      // 如果是认证相关错误，设置错误提示
+      if (error instanceof Error && (error.message.includes('401') || error.message.includes('403'))) {
+        setError('获取网站元数据失败：需要认证，请先在设置页面完成GitHub登录')
+      } else if (!instance.authConfig?.isAuthenticated) {
+        setError('获取网站元数据失败：实例未认证，请先在设置页面完成GitHub登录')
+      } else {
+        setError('获取网站元数据失败，请检查网络连接或实例配置')
+      }
+
+      // API失败时使用页面的默认favicon作为备用
+      if (fallbackFavicon) {
+        console.log('API失败，使用页面默认favicon:', fallbackFavicon)
+        setCustomIcon(fallbackFavicon)
+      } else {
+        console.log('API失败且无页面favicon，保持空值')
+      }
+    } finally {
+      console.log('fetchMetadataFromAPI 完成，设置 metadataLoading = false')
+      setMetadataLoading(false)
+    }
+  }
 
   async function initializePopup() {
     try {
@@ -48,18 +161,43 @@ export default function PopupApp() {
       const result = await chrome.storage.session.get('quickAddData')
       const quickAddData = result.quickAddData as QuickAddData
       console.log('快速添加数据:', quickAddData)
-      
+
       if (quickAddData?.pageInfo) {
         console.log('使用快速添加数据')
         setPageInfo(quickAddData.pageInfo)
         setCustomTitle(quickAddData.pageInfo.title)
         setCustomDescription(quickAddData.pageInfo.description || '')
+        setCustomIcon('') // 不设置默认值，等待API返回
+        // 通过API获取描述和图标
+        if (quickAddData.pageInfo.url) {
+          await fetchMetadataFromAPI(quickAddData.pageInfo.url, defaultInstance, quickAddData.pageInfo.favicon)
+        } else {
+          console.log('快速添加数据中无URL，跳过API调用')
+          if (quickAddData.pageInfo.favicon) {
+            setCustomIcon(quickAddData.pageInfo.favicon)
+          }
+        }
         console.log('设置的页面信息:', quickAddData.pageInfo)
       } else {
         // 没有快速添加数据，获取当前页面信息
         console.log('获取当前页面信息')
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
         console.log('当前标签页:', tab)
+
+        if (!tab) {
+          console.error('无法获取当前标签页')
+          setError('无法获取当前页面信息')
+          return
+        }
+
+        if (!tab.url) {
+          console.error('无法获取当前页面URL')
+          setError('无法获取当前页面URL')
+          return
+        }
+
+        console.log('当前页面URL:', tab.url)
+
         if (tab && tab.id) {
           try {
             // 通过内容脚本获取页面元数据（包括描述信息）
@@ -69,6 +207,9 @@ export default function PopupApp() {
               setPageInfo(response.data)
               setCustomTitle(response.data.title || '')
               setCustomDescription(response.data.description || '')
+              setCustomIcon('') // 不设置默认值，等待API返回
+              // 通过API获取描述和图标
+              await fetchMetadataFromAPI(response.data.url, defaultInstance, response.data.favicon)
             } else {
               // 如果内容脚本获取失败，使用标签页基本信息
               const pageInfo = {
@@ -80,6 +221,14 @@ export default function PopupApp() {
               console.log('使用标签页基本信息:', pageInfo)
               setPageInfo(pageInfo)
               setCustomTitle(tab.title || '')
+              setCustomDescription('')
+              setCustomIcon('') // 不设置默认值，等待API返回
+              // 通过API获取描述和图标
+              if (pageInfo.url) {
+                await fetchMetadataFromAPI(pageInfo.url, defaultInstance, pageInfo.favicon)
+              } else {
+                console.log('无法获取页面URL，跳过API调用')
+              }
             }
           } catch (error) {
             console.log('内容脚本通信失败，使用标签页基本信息:', error)
@@ -92,6 +241,14 @@ export default function PopupApp() {
             }
             setPageInfo(pageInfo)
             setCustomTitle(tab.title || '')
+            setCustomDescription('')
+            setCustomIcon('') // 不设置默认值，等待API返回
+            // 通过API获取描述和图标
+            if (pageInfo.url) {
+              await fetchMetadataFromAPI(pageInfo.url, defaultInstance, pageInfo.favicon)
+            } else {
+              console.log('无法获取页面URL，跳过API调用')
+            }
           }
         }
       }
@@ -112,7 +269,7 @@ export default function PopupApp() {
       const api = new NavSphereAPI(instance)
       const data = await api.getNavigationData()
       setNavigationData(data)
-      
+
       // 尝试恢复上次选择的分类
       await restoreLastSelectedCategory(instance.id, data)
     } catch (err) {
@@ -134,7 +291,7 @@ export default function PopupApp() {
       // 从存储中获取上次选择的分类
       const result = await chrome.storage.local.get(`lastSelectedCategory_${instanceId}`)
       const lastCategoryId = result[`lastSelectedCategory_${instanceId}`]
-      
+
       if (lastCategoryId && isValidCategoryId(lastCategoryId, navigationData)) {
         // 如果上次选择的分类仍然存在，则选择它
         await handleCategorySelect(lastCategoryId, navigationData, true)
@@ -159,7 +316,7 @@ export default function PopupApp() {
       if (category.id === categoryId) {
         return true
       }
-      
+
       if (category.subCategories) {
         for (const subCategory of category.subCategories) {
           if (subCategory.id === categoryId) {
@@ -177,6 +334,12 @@ export default function PopupApp() {
       return
     }
 
+    // 如果图标为空且不在加载中，显示错误
+    if ((!customIcon || !customIcon.trim()) && !metadataLoading) {
+      setError('图标地址是必填字段，请等待自动获取或手动输入')
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -185,18 +348,18 @@ export default function PopupApp() {
       console.log('选中实例:', selectedInstance)
       console.log('页面信息:', pageInfo)
       console.log('选中分类ID:', selectedCategoryId)
-      
+
       const bookmarkData = {
         title: (customTitle && customTitle.trim()) || pageInfo.title,
         href: pageInfo.url,
         description: (customDescription && customDescription.trim()) || pageInfo.description || '',
-        icon: pageInfo.favicon,
+        icon: (customIcon && customIcon.trim()) || pageInfo.favicon || '',
       }
       console.log('书签数据:', bookmarkData)
       console.log('customTitle:', customTitle)
       console.log('customDescription:', customDescription)
       console.log('pageInfo:', pageInfo)
-      
+
       const api = new NavSphereAPI(selectedInstance)
       console.log('调用API添加书签...')
       await api.addNavigationItem(selectedCategoryId, bookmarkData)
@@ -213,10 +376,10 @@ export default function PopupApp() {
       }
 
       setSuccess(true)
-      
+
       // 清除会话数据
       chrome.storage.session.remove('quickAddData')
-      
+
       // 2秒后关闭弹窗
       setTimeout(() => {
         window.close()
@@ -237,7 +400,7 @@ export default function PopupApp() {
   async function handleCategorySelect(categoryId: string, navigationData: NavigationData, isRestored: boolean = false) {
     setSelectedCategoryId(categoryId)
     setIsRestoredSelection(isRestored)
-    
+
     // 查找分类路径
     let categoryPath = ''
     for (const category of navigationData.navigationItems) {
@@ -245,7 +408,7 @@ export default function PopupApp() {
         categoryPath = category.title
         break
       }
-      
+
       if (category.subCategories) {
         for (const subCategory of category.subCategories) {
           if (subCategory.id === categoryId) {
@@ -254,12 +417,12 @@ export default function PopupApp() {
           }
         }
       }
-      
+
       if (categoryPath) break
     }
-    
+
     setSelectedCategoryPath(categoryPath)
-    
+
     // 保存当前选择到存储中（只有在用户主动选择时才保存）
     if (selectedInstance && !isRestored) {
       try {
@@ -440,15 +603,70 @@ export default function PopupApp() {
                 placeholder="请输入标题"
               />
             </div>
-            
+
             <div>
-              <Label htmlFor="description">描述（可选）</Label>
-              <Input
-                id="description"
-                value={customDescription}
-                onChange={(e) => setCustomDescription(e.target.value)}
-                placeholder="请输入描述"
-              />
+              <Label htmlFor="description">
+                描述（可选）
+                {metadataLoading && (
+                  <span className="ml-2 text-xs text-blue-600 flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    正在获取...
+                  </span>
+                )}
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="description"
+                  value={customDescription}
+                  onChange={(e) => setCustomDescription(e.target.value)}
+                  placeholder={metadataLoading ? "正在获取描述..." : "请输入描述（自动获取，可编辑）"}
+                  className={metadataLoading ? "bg-blue-50 border-blue-200" : ""}
+                />
+                {metadataLoading && (
+                  <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="icon">
+                图标地址 <span className="text-red-500">*</span>
+                {metadataLoading && (
+                  <span className="ml-2 text-xs text-blue-600 flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    正在获取...
+                  </span>
+                )}
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="icon"
+                  value={customIcon}
+                  onChange={(e) => setCustomIcon(e.target.value)}
+                  placeholder={metadataLoading ? "正在获取图标..." : "请输入图标URL（等待API获取或手动输入）"}
+                  required
+                  className={metadataLoading ? "bg-blue-50 border-blue-200" : ""}
+                />
+                {metadataLoading ? (
+                  <div className="flex-shrink-0 w-8 h-8 border-2 border-blue-200 rounded flex items-center justify-center bg-blue-50">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                  </div>
+                ) : customIcon ? (
+                  <div>
+                  </div>
+                ) : (
+                  <div>
+                  </div>
+                )}
+              </div>
+              {metadataLoading && (
+                <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  正在通过API获取网站图标，请稍候...
+                </p>
+              )}
             </div>
 
             <div>
@@ -476,7 +694,7 @@ export default function PopupApp() {
                   )}
                 </div>
               )}
-              
+
               {categoriesLoading ? (
                 <div className="mt-2 space-y-2">
                   {/* 加载状态提示 */}
@@ -484,7 +702,7 @@ export default function PopupApp() {
                     <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
                     <span className="text-sm text-blue-600">加载分类中...</span>
                   </div>
-                  
+
                   {/* 骨架屏效果 */}
                   <div className="space-y-2">
                     {[1, 2, 3].map((i) => (
@@ -502,16 +720,16 @@ export default function PopupApp() {
                   </div>
                   <p className="text-xs text-red-700 mb-3">{categoriesError}</p>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => selectedInstance && loadNavigationData(selectedInstance)}
                       className="flex-1"
                     >
                       重试
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={openOptionsPage}
                       className="flex-1"
@@ -528,11 +746,10 @@ export default function PopupApp() {
                       {/* 一级分类 */}
                       <div
                         onClick={() => handleCategorySelect(category.id, navigationData, false)}
-                        className={`p-3 rounded-md cursor-pointer transition-colors ${
-                          selectedCategoryId === category.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-accent'
-                        }`}
+                        className={`p-3 rounded-md cursor-pointer transition-colors ${selectedCategoryId === category.id
+                          ? 'bg-primary text-primary-foreground'
+                          : 'hover:bg-accent'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{category.title}</span>
@@ -541,7 +758,7 @@ export default function PopupApp() {
                           <p className="text-xs opacity-80 mt-1">{category.description}</p>
                         )}
                       </div>
-                      
+
                       {/* 二级分类 */}
                       {category.subCategories && category.subCategories.length > 0 && (
                         <div className="ml-4 mt-1 space-y-1">
@@ -549,11 +766,10 @@ export default function PopupApp() {
                             <div
                               key={subCategory.id}
                               onClick={() => handleCategorySelect(subCategory.id, navigationData, false)}
-                              className={`p-2 rounded-md cursor-pointer transition-colors text-sm ${
-                                selectedCategoryId === subCategory.id
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'hover:bg-accent/50'
-                              }`}
+                              className={`p-2 rounded-md cursor-pointer transition-colors text-sm ${selectedCategoryId === subCategory.id
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-accent/50'
+                                }`}
                             >
                               <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground">├─</span>
@@ -579,16 +795,16 @@ export default function PopupApp() {
                     请检查实例配置或网络连接
                   </p>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => selectedInstance && loadNavigationData(selectedInstance)}
                       className="flex-1"
                     >
                       重新加载
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={openOptionsPage}
                       className="flex-1"
@@ -613,7 +829,7 @@ export default function PopupApp() {
             <div className="flex gap-2">
               <Button
                 onClick={handleQuickAdd}
-                disabled={loading || categoriesLoading || !selectedCategoryId || !!categoriesError}
+                disabled={loading || categoriesLoading || !selectedCategoryId || !!categoriesError || metadataLoading || (!customIcon.trim() && !metadataLoading)}
                 className="flex-1"
               >
                 {loading ? (
@@ -623,7 +839,7 @@ export default function PopupApp() {
                 )}
                 {loading ? '添加中...' : categoriesLoading ? '加载中...' : '添加'}
               </Button>
-              
+
               <Button
                 variant="outline"
                 onClick={openOptionsPage}
