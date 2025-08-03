@@ -27,14 +27,14 @@ import {
 type TabType = 'welcome' | 'instances' | 'auth' | 'sync' | 'settings'
 
 export default function OptionsApp() {
-  const [activeTab, setActiveTab] = useState<TabType>('instances')
+  const [activeTab, setActiveTab] = useState<TabType>('welcome')
   const [instances, setInstances] = useState<NavSphereInstance[]>([])
   const [settings, setSettings] = useState<ExtensionSettings | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     initializeOptions()
-    
+
     // 检查URL参数决定显示哪个标签
     const urlParams = new URLSearchParams(window.location.search)
     const tab = urlParams.get('tab') as TabType
@@ -49,7 +49,7 @@ export default function OptionsApp() {
         StorageManager.getInstances(),
         StorageManager.getSettings()
       ])
-      
+
       setInstances(instanceList)
       setSettings(settingsData)
     } catch (error) {
@@ -58,6 +58,7 @@ export default function OptionsApp() {
   }
 
   const tabs = [
+    { id: 'welcome', label: '欢迎', icon: Home },
     { id: 'instances', label: '实例管理', icon: Server },
     { id: 'auth', label: '认证设置', icon: Key },
     { id: 'sync', label: '书签同步', icon: Sync },
@@ -103,11 +104,10 @@ export default function OptionsApp() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors ${
-                    activeTab === tab.id
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors ${activeTab === tab.id
                       ? 'bg-primary text-primary-foreground'
                       : 'hover:bg-accent hover:text-accent-foreground'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   {tab.label}
@@ -119,6 +119,10 @@ export default function OptionsApp() {
 
         {/* 主内容区 */}
         <main className="flex-1 p-6">
+          {activeTab === 'welcome' && (
+            <WelcomeTab />
+          )}
+
           {activeTab === 'instances' && (
             <InstancesTab
               instances={instances}
@@ -127,21 +131,21 @@ export default function OptionsApp() {
               setLoading={setLoading}
             />
           )}
-          
+
           {activeTab === 'auth' && (
             <AuthTab
               instances={instances}
               onInstancesChange={setInstances}
             />
           )}
-          
+
           {activeTab === 'sync' && (
             <SyncTab
               settings={settings}
               onSettingsChange={setSettings}
             />
           )}
-          
+
           {activeTab === 'settings' && (
             <SettingsTab
               settings={settings}
@@ -151,6 +155,264 @@ export default function OptionsApp() {
           )}
         </main>
       </div>
+    </div>
+  )
+}
+
+// 欢迎标签页
+function WelcomeTab() {
+  return (
+    <div className="space-y-6">
+      {/* 欢迎标题 */}
+      <div className="text-center py-8">
+        <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+          <Globe className="w-8 h-8 text-primary-foreground" />
+        </div>
+        <h1 className="text-3xl font-bold mb-2">欢迎使用 NavSphere 扩展</h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          一个强大的浏览器书签管理和同步工具，让您的导航体验更加便捷高效
+        </p>
+      </div>
+
+      {/* 功能特性 */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Server className="w-12 h-12 mx-auto mb-4 text-primary" />
+            <h3 className="text-lg font-semibold mb-2">多实例管理</h3>
+            <p className="text-muted-foreground">
+              连接和管理多个 NavSphere 实例，在不同的导航网站之间轻松切换
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Bookmark className="w-12 h-12 mx-auto mb-4 text-primary" />
+            <h3 className="text-lg font-semibold mb-2">书签同步</h3>
+            <p className="text-muted-foreground">
+              将浏览器书签同步到您的 NavSphere 实例，实现跨设备访问
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Github className="w-12 h-12 mx-auto mb-4 text-primary" />
+            <h3 className="text-lg font-semibold mb-2">GitHub 集成</h3>
+            <p className="text-muted-foreground">
+              通过 GitHub OAuth 认证，安全地管理您的个人导航数据
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Settings className="w-12 h-12 mx-auto mb-4 text-primary" />
+            <h3 className="text-lg font-semibold mb-2">个性化设置</h3>
+            <p className="text-muted-foreground">
+              丰富的配置选项，让扩展完全符合您的使用习惯
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Globe className="w-12 h-12 mx-auto mb-4 text-primary" />
+            <h3 className="text-lg font-semibold mb-2">跨平台支持</h3>
+            <p className="text-muted-foreground">
+              支持 Chrome、Edge 等主流浏览器，数据云端同步
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Key className="w-12 h-12 mx-auto mb-4 text-primary" />
+            <h3 className="text-lg font-semibold mb-2">安全可靠</h3>
+            <p className="text-muted-foreground">
+              采用标准 OAuth 认证，数据传输加密，保护您的隐私安全
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 快速开始 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Home className="w-5 h-5" />
+            快速开始
+          </CardTitle>
+          <CardDescription>
+            按照以下步骤快速配置和使用 NavSphere 扩展
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  1
+                </div>
+                <div>
+                  <h4 className="font-semibold">添加 NavSphere 实例</h4>
+                  <p className="text-sm text-muted-foreground">
+                    在"实例管理"页面添加您的 NavSphere 导航网站
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  2
+                </div>
+                <div>
+                  <h4 className="font-semibold">配置 GitHub 认证</h4>
+                  <p className="text-sm text-muted-foreground">
+                    在"认证设置"页面配置 GitHub OAuth 以启用同步功能
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  3
+                </div>
+                <div>
+                  <h4 className="font-semibold">同步书签</h4>
+                  <p className="text-sm text-muted-foreground">
+                    在"书签同步"页面将浏览器书签同步到您的导航网站
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  4
+                </div>
+                <div>
+                  <h4 className="font-semibold">个性化设置</h4>
+                  <p className="text-sm text-muted-foreground">
+                    在"通用设置"页面调整扩展的行为和外观
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  5
+                </div>
+                <div>
+                  <h4 className="font-semibold">开始使用</h4>
+                  <p className="text-sm text-muted-foreground">
+                    点击浏览器工具栏的扩展图标，享受便捷的导航体验
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <Button
+                  onClick={() => {
+                    const url = new URL(window.location.href)
+                    url.searchParams.set('tab', 'instances')
+                    window.location.href = url.toString()
+                  }}
+                  className="w-full"
+                >
+                  <Server className="w-4 h-4 mr-2" />
+                  开始配置实例
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 帮助和支持 */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Github className="w-5 h-5" />
+              开源项目
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              NavSphere 是一个开源项目，欢迎参与贡献和反馈
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('https://github.com/tianyaxiang/NavSphere', '_blank')}
+              >
+                <Github className="w-4 h-4 mr-2" />
+                GitHub 仓库
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('https://github.com/tianyaxiang/NavSphere/issues', '_blank')}
+              >
+                问题反馈
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ExternalLink className="w-5 h-5" />
+              相关链接
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              了解更多关于 NavSphere 项目的信息
+            </p>
+            <div className="space-y-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => window.open('https://github.com/tianyaxiang/NavSphere/blob/main/README.md', '_blank')}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                使用文档
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => window.open('https://github.com/tianyaxiang/NavSphere/releases', '_blank')}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                版本更新
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 版本信息 */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              <span>NavSphere Browser Extension</span>
+            </div>
+            <div>
+              版本 1.0.0
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -209,11 +471,11 @@ function InstancesTab({
       console.log('准备添加实例:', instance)
       await StorageManager.addInstance(instance)
       console.log('实例添加成功')
-      
+
       const updatedInstances = await StorageManager.getInstances()
       console.log('获取到的实例列表:', updatedInstances)
       onInstancesChange(updatedInstances)
-      
+
       setNewInstance({ name: '', url: '' })
       setShowAddForm(false)
       setValidationResult(null)
@@ -241,10 +503,10 @@ function InstancesTab({
 
     setValidating(true)
     setValidationResult(null)
-    
+
     try {
       console.log('开始验证实例:', newInstance.url)
-      
+
       // 先检查URL格式
       let testUrl: URL
       try {
@@ -269,13 +531,13 @@ function InstancesTab({
       }
 
       const isValid = await detectNavSphereInstance(newInstance.url)
-      
+
       if (isValid) {
         // 获取站点元数据
         console.log('获取站点元数据...')
         const metadata = await getSiteMetadata(newInstance.url)
         console.log('站点元数据:', metadata)
-        
+
         setValidationResult({
           isValid: true,
           message: '✅ 检测到有效的 NavSphere 实例',
@@ -295,7 +557,7 @@ function InstancesTab({
             mode: 'cors',
             signal: AbortSignal.timeout(5000)
           })
-          
+
           if (healthResponse.ok) {
             const data = await healthResponse.json()
             if (data.status === 'ok') {
@@ -303,7 +565,7 @@ function InstancesTab({
               console.log('获取站点元数据...')
               const metadata = await getSiteMetadata(newInstance.url)
               console.log('站点元数据:', metadata)
-              
+
               setValidationResult({
                 isValid: true,
                 message: '⚠️ 检测到健康检查端点',
@@ -328,7 +590,7 @@ function InstancesTab({
         } catch (error) {
           // 忽略错误，显示原始错误信息
         }
-        
+
         setValidationResult({
           isValid: false,
           message: '❌ 无法连接到 NavSphere 实例',
@@ -350,7 +612,7 @@ function InstancesTab({
       console.error('验证失败:', error)
       let errorMessage = '验证过程中发生错误'
       const details = ['请检查网络连接和URL是否正确']
-      
+
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         errorMessage = '网络连接失败'
         details.push('• 检查网络连接')
@@ -359,7 +621,7 @@ function InstancesTab({
       } else if (error instanceof Error) {
         details.push(`错误详情: ${error.message}`)
       }
-      
+
       setValidationResult({
         isValid: false,
         message: errorMessage,
@@ -398,7 +660,7 @@ function InstancesTab({
             </Button>
           </div>
         </CardHeader>
-        
+
         {showAddForm && (
           <CardContent className="space-y-4">
             <div>
@@ -410,7 +672,7 @@ function InstancesTab({
                 placeholder="例如：个人导航、工作导航"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="instance-url">实例 URL</Label>
               <div className="flex gap-2">
@@ -432,15 +694,14 @@ function InstancesTab({
                   )}
                 </Button>
               </div>
-              
+
               <p className="text-xs text-muted-foreground mt-1">
                 请输入完整的NavSphere网站URL，例如：https://your-site.vercel.app
               </p>
-              
+
               {validationResult && (
-                <div className={`mt-2 ${
-                  validationResult.isValid ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <div className={`mt-2 ${validationResult.isValid ? 'text-green-600' : 'text-red-600'
+                  }`}>
                   <div className="flex items-center gap-2 text-sm mb-2">
                     {validationResult.isValid ? (
                       <Check className="w-4 h-4" />
@@ -449,7 +710,7 @@ function InstancesTab({
                     )}
                     {validationResult.message}
                   </div>
-                  
+
                   {validationResult.details && validationResult.details.length > 0 && (
                     <div className="text-xs bg-gray-50 p-3 rounded border-l-4 border-gray-300">
                       {validationResult.details.map((detail, index) => (
@@ -462,7 +723,7 @@ function InstancesTab({
                 </div>
               )}
             </div>
-            
+
             <div className="flex gap-2">
               <Button
                 onClick={handleAddInstance}
@@ -475,7 +736,7 @@ function InstancesTab({
                 )}
                 添加
               </Button>
-              
+
               <Button
                 variant="outline"
                 onClick={() => {
@@ -513,13 +774,12 @@ function InstancesTab({
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`instance-status ${
-                      instance.authConfig.isAuthenticated ? 'online' : 'offline'
-                    }`} />
+                    <div className={`instance-status ${instance.authConfig.isAuthenticated ? 'online' : 'offline'
+                      }`} />
                     {instance.favicon && (
-                      <img 
-                        src={instance.favicon} 
-                        alt="" 
+                      <img
+                        src={instance.favicon}
+                        alt=""
                         className="w-5 h-5 rounded"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none'
@@ -542,7 +802,7 @@ function InstancesTab({
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -587,7 +847,7 @@ function InstancesTab({
               <li>• 具有标准的 API 端点</li>
             </ul>
           </div>
-          
+
           <div>
             <h4 className="font-medium mb-2">常见问题解决</h4>
             <div className="text-sm text-muted-foreground space-y-2">
@@ -635,15 +895,15 @@ function AuthTab({
 
   async function handleConfigureOAuth() {
     if (!selectedInstance || !githubClientId) return
-    
+
     setLoading('configuring')
     try {
       const { configureGitHubOAuth } = await import('@/lib/github-auth')
       await configureGitHubOAuth(selectedInstance, githubClientId)
-      
+
       const updatedInstances = await StorageManager.getInstances()
       onInstancesChange(updatedInstances)
-      
+
       setGithubClientId('')
       setSelectedInstance('')
     } catch (error) {
@@ -659,7 +919,7 @@ function AuthTab({
     try {
       const { authenticateGitHub } = await import('@/lib/github-auth')
       await authenticateGitHub(instanceId)
-      
+
       const updatedInstances = await StorageManager.getInstances()
       onInstancesChange(updatedInstances)
     } catch (error) {
@@ -675,7 +935,7 @@ function AuthTab({
     try {
       const { logoutGitHub } = await import('@/lib/github-auth')
       await logoutGitHub(instanceId)
-      
+
       const updatedInstances = await StorageManager.getInstances()
       onInstancesChange(updatedInstances)
     } catch (error) {
@@ -767,9 +1027,8 @@ function AuthTab({
               {instances.map((instance) => (
                 <div key={instance.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      instance.authConfig.isAuthenticated ? 'bg-green-500' : 'bg-gray-300'
-                    }`} />
+                    <div className={`w-3 h-3 rounded-full ${instance.authConfig.isAuthenticated ? 'bg-green-500' : 'bg-gray-300'
+                      }`} />
                     <div>
                       <h4 className="font-medium">{instance.name}</h4>
                       <div className="text-sm text-muted-foreground">
@@ -847,14 +1106,14 @@ function AuthTab({
               <li>• Authorization callback URL: {chrome.identity.getRedirectURL()}</li>
             </ul>
           </div>
-          
+
           <div>
             <h4 className="font-medium mb-2">2. 配置 Client ID</h4>
             <p className="text-sm text-muted-foreground">
               创建完成后，复制 Client ID 并在上方表单中配置
             </p>
           </div>
-          
+
           <div>
             <h4 className="font-medium mb-2">3. 进行认证</h4>
             <p className="text-sm text-muted-foreground">
@@ -892,7 +1151,7 @@ function SyncTab({
         StorageManager.getInstances(),
         checkBookmarkPermission()
       ])
-      
+
       setInstances(instanceList)
       setHasBookmarkPermission(hasPermission)
 
@@ -1070,7 +1329,7 @@ function SyncTab({
                       />
                       <span className="text-sm">启用自动同步</span>
                     </label>
-                    
+
                     {settings.syncSettings.autoSync && (
                       <div className="flex items-center gap-2">
                         <Label htmlFor="sync-interval" className="text-sm">间隔:</Label>
@@ -1135,9 +1394,8 @@ function SyncTab({
                 {instances.map((instance) => (
                   <div key={instance.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        instance.authConfig.isAuthenticated ? 'bg-green-500' : 'bg-gray-300'
-                      }`} />
+                      <div className={`w-3 h-3 rounded-full ${instance.authConfig.isAuthenticated ? 'bg-green-500' : 'bg-gray-300'
+                        }`} />
                       <div>
                         <h4 className="font-medium">{instance.name}</h4>
                         <p className="text-sm text-muted-foreground">
@@ -1171,7 +1429,7 @@ function SyncTab({
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${syncProgress.current}%` }}
                       />
@@ -1181,22 +1439,20 @@ function SyncTab({
 
                 {/* 同步结果 */}
                 {lastSyncResult && (
-                  <div className={`p-4 rounded-lg ${
-                    lastSyncResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                  } border`}>
+                  <div className={`p-4 rounded-lg ${lastSyncResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                    } border`}>
                     <div className="flex items-center gap-2 mb-2">
                       {lastSyncResult.success ? (
                         <Check className="w-5 h-5 text-green-600" />
                       ) : (
                         <X className="w-5 h-5 text-red-600" />
                       )}
-                      <span className={`font-medium ${
-                        lastSyncResult.success ? 'text-green-800' : 'text-red-800'
-                      }`}>
+                      <span className={`font-medium ${lastSyncResult.success ? 'text-green-800' : 'text-red-800'
+                        }`}>
                         {lastSyncResult.message}
                       </span>
                     </div>
-                    
+
                     {lastSyncResult.success && (
                       <div className="text-sm text-gray-600 space-y-1">
                         <p>• 处理书签: {lastSyncResult.stats.totalProcessed} 个</p>

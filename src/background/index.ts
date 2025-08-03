@@ -9,6 +9,9 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     // 首次安装时的初始化
     console.log('NavSphere Extension installed')
     
+    // 初始化默认实例
+    await StorageManager.initializeDefaultInstance()
+    
     // 创建右键菜单
     createContextMenus()
     
@@ -19,6 +22,10 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   } else if (details.reason === 'update') {
     // 更新时的处理
     console.log('NavSphere Extension updated')
+    
+    // 确保默认实例存在（用于从旧版本升级的用户）
+    await StorageManager.initializeDefaultInstance()
+    
     createContextMenus()
   }
 })

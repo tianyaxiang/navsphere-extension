@@ -4,23 +4,65 @@
 function getPageMetadata() {
   const title = document.title
   const url = window.location.href
-  
-  // 获取页面描述
+
+  // 获取页面描述 - 尝试多种方式
+  let description = ''
+
+  // 1. 尝试标准的 meta description
   const descriptionMeta = document.querySelector('meta[name="description"]') as HTMLMetaElement
-  const description = descriptionMeta?.content || ''
-  
+  if (descriptionMeta?.content) {
+    description = descriptionMeta.content.trim()
+  }
+
+  // 2. 如果没有找到，尝试 og:description
+  if (!description) {
+    const ogDescriptionMeta = document.querySelector('meta[property="og:description"]') as HTMLMetaElement
+    if (ogDescriptionMeta?.content) {
+      description = ogDescriptionMeta.content.trim()
+    }
+  }
+
+  // 3. 如果还没有找到，尝试 twitter:description
+  if (!description) {
+    const twitterDescriptionMeta = document.querySelector('meta[name="twitter:description"]') as HTMLMetaElement
+    if (twitterDescriptionMeta?.content) {
+      description = twitterDescriptionMeta.content.trim()
+    }
+  }
+
+  // 4. 如果仍然没有找到，尝试从页面内容中提取
+  if (!description) {
+    // 尝试获取第一个段落的文本作为描述
+    const firstParagraph = document.querySelector('p')
+    if (firstParagraph?.textContent) {
+      const text = firstParagraph.textContent.trim()
+      if (text.length > 20) { // 确保有足够的内容
+        description = text.length > 160 ? text.substring(0, 160) + '...' : text
+      }
+    }
+  }
+
   // 获取页面图标
   let favicon = ''
+
+  // 1. 尝试获取 favicon
   const iconLink = document.querySelector('link[rel*="icon"]') as HTMLLinkElement
   if (iconLink?.href) {
     favicon = iconLink.href
   } else {
-    favicon = `${window.location.origin}/favicon.ico`
+    // 2. 尝试获取 apple-touch-icon
+    const appleIconLink = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement
+    if (appleIconLink?.href) {
+      favicon = appleIconLink.href
+    } else {
+      // 3. 使用默认 favicon 路径
+      favicon = `${window.location.origin}/favicon.ico`
+    }
   }
-  
+
   // 获取选中文本
   const selectedText = window.getSelection()?.toString() || ''
-  
+
   return {
     title,
     url,
@@ -31,33 +73,33 @@ function getPageMetadata() {
 }
 
 // 监听来自后台脚本的消息
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   switch (message.type) {
     case 'GET_PAGE_METADATA':
       const metadata = getPageMetadata()
       sendResponse({ success: true, data: metadata })
       break
-      
+
     case 'HIGHLIGHT_ELEMENT':
       // 高亮页面元素（用于调试）
       highlightElement(message.selector)
       sendResponse({ success: true })
       break
-      
+
     default:
       sendResponse({ success: false, error: 'Unknown message type' })
   }
-  
+
   return true
 })
 
 // 高亮元素函数
 function highlightElement(selector: string) {
-  const element = document.querySelector(selector)
+  const element = document.querySelector(selector) as HTMLElement
   if (element) {
     element.style.outline = '2px solid #0066cc'
     element.style.outlineOffset = '2px'
-    
+
     setTimeout(() => {
       element.style.outline = ''
       element.style.outlineOffset = ''
@@ -104,7 +146,7 @@ document.addEventListener('keydown', (event) => {
   // Ctrl+Shift+A 或 Cmd+Shift+A
   if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'A') {
     event.preventDefault()
-    
+
     const metadata = getPageMetadata()
     chrome.runtime.sendMessage({
       type: 'QUICK_ADD_SHORTCUT',

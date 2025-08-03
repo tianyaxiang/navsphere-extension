@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StorageManager } from '@/lib/storage'
 import { NavSphereAPI } from '@/lib/api'
 import type { NavSphereInstance, NavigationData, PageInfo, QuickAddData } from '@/types'
@@ -20,7 +20,6 @@ export default function PopupApp() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
     initializePopup()
@@ -58,22 +57,44 @@ export default function PopupApp() {
         console.log('获取当前页面信息')
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
         console.log('当前标签页:', tab)
-        if (tab) {
-          const pageInfo = {
-            title: tab.title || '',
-            url: tab.url || '',
-            description: '',
-            favicon: tab.favIconUrl || '',
+        if (tab && tab.id) {
+          try {
+            // 通过内容脚本获取页面元数据（包括描述信息）
+            const response = await chrome.tabs.sendMessage(tab.id, { type: 'GET_PAGE_METADATA' })
+            if (response && response.success) {
+              console.log('从内容脚本获取的页面信息:', response.data)
+              setPageInfo(response.data)
+              setCustomTitle(response.data.title || '')
+              setCustomDescription(response.data.description || '')
+            } else {
+              // 如果内容脚本获取失败，使用标签页基本信息
+              const pageInfo = {
+                title: tab.title || '',
+                url: tab.url || '',
+                description: '',
+                favicon: tab.favIconUrl || '',
+              }
+              console.log('使用标签页基本信息:', pageInfo)
+              setPageInfo(pageInfo)
+              setCustomTitle(tab.title || '')
+            }
+          } catch (error) {
+            console.log('内容脚本通信失败，使用标签页基本信息:', error)
+            // 如果内容脚本通信失败，使用标签页基本信息
+            const pageInfo = {
+              title: tab.title || '',
+              url: tab.url || '',
+              description: '',
+              favicon: tab.favIconUrl || '',
+            }
+            setPageInfo(pageInfo)
+            setCustomTitle(tab.title || '')
           }
-          console.log('设置的页面信息:', pageInfo)
-          setPageInfo(pageInfo)
-          setCustomTitle(tab.title || '')
         }
       }
 
       // 获取导航数据
       await loadNavigationData(defaultInstance)
-      setInitialized(true)
       console.log('初始化完成')
     } catch (err) {
       console.error('Failed to initialize popup:', err)
@@ -207,19 +228,99 @@ export default function PopupApp() {
   // 根据实例状态显示不同界面
   if (instances.length === 0) {
     return (
-      <div className="extension-popup p-6">
+      <div className="extension-popup p-6 space-y-4">
+        {/* 插件介绍头部 */}
+        <div className="text-center space-y-2">
+          <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <ExternalLink className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-xl font-bold text-gray-900">NavSphere 扩展</h1>
+          <p className="text-sm text-gray-600">快速书签管理和同步工具</p>
+        </div>
+
+        {/* 功能特性 */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">欢迎使用 NavSphere 扩展</CardTitle>
-            <CardDescription>
-              您还没有配置任何 NavSphere 实例
-            </CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">🚀 核心功能</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="text-sm font-medium">快速添加链接</p>
+                <p className="text-xs text-gray-600">右键菜单或快捷键 Ctrl+Shift+A 快速添加当前页面</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="text-sm font-medium">多实例支持</p>
+                <p className="text-xs text-gray-600">支持添加和管理多个 NavSphere 实例</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="text-sm font-medium">智能分类</p>
+                <p className="text-xs text-gray-600">自动获取页面信息，支持选择或创建分类</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="text-sm font-medium">书签同步</p>
+                <p className="text-xs text-gray-600">同步浏览器书签到 NavSphere 平台</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 使用指南 */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">📖 快速开始</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">1</div>
+              <p className="text-sm">配置您的 NavSphere 实例</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">2</div>
+              <p className="text-sm">完成 GitHub OAuth 认证</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">3</div>
+              <p className="text-sm">开始快速添加书签</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 技术特性 */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">🔧 技术特性</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-gray-50 rounded px-2 py-1 text-center">Manifest V3</div>
+              <div className="bg-gray-50 rounded px-2 py-1 text-center">TypeScript</div>
+              <div className="bg-gray-50 rounded px-2 py-1 text-center">React</div>
+              <div className="bg-gray-50 rounded px-2 py-1 text-center">跨浏览器</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 配置按钮 */}
+        <Card>
+          <CardContent className="pt-6">
             <Button onClick={openOptionsPage} className="w-full">
               <Settings className="w-4 h-4 mr-2" />
-              配置实例
+              开始配置实例
             </Button>
+            <p className="text-xs text-gray-500 text-center mt-2">
+              配置完成后即可开始使用快速添加功能
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -229,6 +330,24 @@ export default function PopupApp() {
   // 主界面 - 显示添加书签功能
   return (
     <div className="extension-popup p-6 space-y-6">
+      {/* 插件简介头部 */}
+      {!pageInfo && (
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <ExternalLink className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900">NavSphere 扩展</h2>
+          <p className="text-sm text-gray-600">快速添加当前页面到您的导航平台</p>
+          <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
+            <span>右键菜单</span>
+            <span>•</span>
+            <span>Ctrl+Shift+A</span>
+            <span>•</span>
+            <span>智能分类</span>
+          </div>
+        </div>
+      )}
+
       {/* 页面信息 */}
       {pageInfo && (
         <Card>
