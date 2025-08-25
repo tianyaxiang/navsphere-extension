@@ -462,7 +462,7 @@ function InstancesTab({
         description: validationResult?.metadata?.description,
         favicon: validationResult?.metadata?.favicon,
         authConfig: {
-          isAuthenticated: false,
+          isAuthenticated: true,
         },
         createdAt: Date.now(),
         lastUsed: 0,
