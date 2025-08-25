@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NavSphere Extension Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .extension-popup {
+      width: 400px;
+      min-height: 500px;
+      font-family: system-ui, -apple-system, sans-serif;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 p-8">
+  <div class="max-w-md mx-auto">
+    <h1 class="text-2xl font-bold text-center mb-6">NavSphere 扩展预览</h1>
+    
+    <!-- 插件介绍界面预览 -->
+    <div class="extension-popup bg-white">
+      <div class="p-6 space-y-4">
+        <!-- 插件介绍头部 -->
+        <div class="text-center space-y-2">
+          <div class="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </div>
+          <h1 class="text-xl font-bold text-gray-900">NavSphere 扩展</h1>
+          <p class="text-sm text-gray-600">快速书签管理和同步工具</p>
+        </div>
+
+        <!-- 功能特性 -->
+        <div class="bg-white border border-gray-200 rounded-lg">
+          <div class="p-4 pb-3">
+            <h3 class="text-base font-semibold">🚀 核心功能</h3>
+          </div>
+          <div class="p-4 pt-0 space-y-3">
+            <div class="flex items-start gap-3">
+              <div class="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p class="text-sm font-medium">快速添加链接</p>
+                <p class="text-xs text-gray-600">右键菜单或快捷键 Ctrl+Shift+A 快速添加当前页面</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p class="text-sm font-medium">多实例支持</p>
+                <p class="text-xs text-gray-600">支持添加和管理多个 NavSphere 实例</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p class="text-sm font-medium">智能分类</p>
+                <p class="text-xs text-gray-600">自动获取页面信息，支持选择或创建分类</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p class="text-sm font-medium">书签同步</p>
+                <p class="text-xs text-gray-600">同步浏览器书签到 NavSphere 平台</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 使用指南 -->
+        <div class="bg-white border border-gray-200 rounded-lg">
+          <div class="p-4 pb-3">
+            <h3 class="text-base font-semibold">📖 快速开始</h3>
+          </div>
+          <div class="p-4 pt-0 space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">1</div>
+              <p class="text-sm">配置您的 NavSphere 实例</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">2</div>
+              <p class="text-sm">完成 GitHub OAuth 认证</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">3</div>
+              <p class="text-sm">开始快速添加书签</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 技术特性 */
+        <div class="bg-white border border-gray-200 rounded-lg">
+          <div class="p-4 pb-3">
+            <h3 class="text-base font-semibold">🔧 技术特性</h3>
+          </div>
+          <div class="p-4 pt-0">
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="bg-gray-50 rounded px-2 py-1 text-center">Manifest V3</div>
+              <div class="bg-gray-50 rounded px-2 py-1 text-center">TypeScript</div>
+              <div class="bg-gray-50 rounded px-2 py-1 text-center">React</div>
+              <div class="bg-gray-50 rounded px-2 py-1 text-center">跨浏览器</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 配置按钮 -->
+        <div class="bg-white border border-gray-200 rounded-lg">
+          <div class="p-4 pt-6">
+            <button class="w-full bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              开始配置实例
+            </button>
+            <p class="text-xs text-gray-500 text-center mt-2">
+              配置完成后即可开始使用快速添加功能
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

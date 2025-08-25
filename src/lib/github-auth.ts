@@ -1,4 +1,5 @@
 import { StorageManager } from './storage'
+import { getInstanceById } from './utils'
 import type { NavSphereInstance, GitHubUser } from '@/types'
 
 const GITHUB_OAUTH_URL = 'https://github.com/login/oauth/authorize'
@@ -187,12 +188,7 @@ export async function configureGitHubOAuth(
   instanceId: string, 
   clientId: string
 ): Promise<void> {
-  const instances = await StorageManager.getInstances()
-  const instance = instances.find(i => i.id === instanceId)
-  
-  if (!instance) {
-    throw new Error('实例不存在')
-  }
+  const instance = await getInstanceById(instanceId)
 
   await StorageManager.updateInstance(instanceId, {
     authConfig: {
@@ -207,10 +203,9 @@ export async function configureGitHubOAuth(
  * 为实例执行 GitHub OAuth 认证
  */
 export async function authenticateGitHub(instanceId: string): Promise<void> {
-  const instances = await StorageManager.getInstances()
-  const instance = instances.find(i => i.id === instanceId)
+  const instance = await getInstanceById(instanceId)
   
-  if (!instance || !instance.authConfig.githubClientId) {
+  if (!instance.authConfig.githubClientId) {
     throw new Error('实例未配置 GitHub OAuth')
   }
 
@@ -235,12 +230,12 @@ export async function authenticateGitHub(instanceId: string): Promise<void> {
  * 检查实例的认证状态
  */
 export async function checkAuthStatus(instanceId: string): Promise<boolean> {
-  const instances = await StorageManager.getInstances()
-  const instance = instances.find(i => i.id === instanceId)
-  
-  if (!instance || !instance.authConfig.isAuthenticated || !instance.authConfig.accessToken) {
-    return false
-  }
+  try {
+    const instance = await getInstanceById(instanceId)
+    
+    if (!instance.authConfig.isAuthenticated || !instance.authConfig.accessToken) {
+      return false
+    }
 
   // 检查令牌是否过期
   if (instance.authConfig.tokenExpiry && Date.now() > instance.authConfig.tokenExpiry) {
@@ -252,18 +247,17 @@ export async function checkAuthStatus(instanceId: string): Promise<boolean> {
   })
 
   return await auth.validateToken(instance.authConfig.accessToken)
+  } catch (error) {
+    console.error('检查认证状态失败:', error)
+    return false
+  }
 }
 
 /**
  * 登出 GitHub
  */
 export async function logoutGitHub(instanceId: string): Promise<void> {
-  const instances = await StorageManager.getInstances()
-  const instance = instances.find(i => i.id === instanceId)
-  
-  if (!instance) {
-    throw new Error('实例不存在')
-  }
+  const instance = await getInstanceById(instanceId)
 
   // 尝试撤销令牌
   if (instance.authConfig.accessToken && instance.authConfig.githubClientId) {

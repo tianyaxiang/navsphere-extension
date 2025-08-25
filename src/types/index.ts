@@ -20,7 +20,7 @@ export interface NavigationCategory {
 
 export interface NavigationItem {
   id: string
-  title: string
+  title?: string
   description?: string
   icon?: string
   items?: NavigationSubItem[]

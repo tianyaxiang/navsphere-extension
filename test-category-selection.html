@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分类选择测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .category {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f5f5f5;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .category:hover {
+            background: #e5e5e5;
+        }
+        .category.selected {
+            background: #007bff;
+            color: white;
+        }
+        .subcategory {
+            margin-left: 20px;
+            padding: 8px;
+            background: #f9f9f9;
+            border-left: 3px solid #ddd;
+        }
+        .subcategory.selected {
+            background: #0056b3;
+            color: white;
+            border-left-color: #004085;
+        }
+        .storage-info {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>NavSphere 扩展 - 分类选择测试</h1>
+    
+    <div class="test-section">
+        <h2>测试场景</h2>
+        <p>这个测试页面模拟了 NavSphere 扩展中的分类选择逻辑，验证二级分类ID的保存和恢复功能。</p>
+    </div>
+
+    <div class="test-section">
+        <h2>模拟导航数据</h2>
+        <div id="navigation-container"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>当前选择状态</h2>
+        <div class="storage-info">
+            <p><strong>选择的分类路径：</strong> <span id="selected-path">未选择</span></p>
+            <p><strong>一级分类ID：</strong> <span id="parent-category-id">-</span></p>
+            <p><strong>二级分类ID：</strong> <span id="sub-category-id">-</span></p>
+            <p><strong>保存到存储的ID：</strong> <span id="saved-category-id">-</span></p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试操作</h2>
+        <button onclick="saveSelection()">保存当前选择</button>
+        <button onclick="restoreSelection()">恢复上次选择</button>
+        <button onclick="clearStorage()">清除存储</button>
+    </div>
+
+    <script>
+        // 模拟导航数据
+        const navigationData = {
+            navigationItems: [
+                {
+                    id: 'cat-1',
+                    title: '开发工具',
+                    description: '编程和开发相关的工具',
+                    subCategories: [
+                        {
+                            id: 'subcat-1-1',
+                            title: 'IDE编辑器',
+                            description: '集成开发环境'
+                        },
+                        {
+                            id: 'subcat-1-2',
+                            title: '版本控制',
+                            description: 'Git和其他版本控制工具'
+                        }
+                    ]
+                },
+                {
+                    id: 'cat-2',
+                    title: '设计资源',
+                    description: '设计和创意相关资源',
+                    subCategories: [
+                        {
+                            id: 'subcat-2-1',
+                            title: '图标库',
+                            description: '免费和付费图标资源'
+                        }
+                    ]
+                },
+                {
+                    id: 'cat-3',
+                    title: '学习资料',
+                    description: '教程和文档'
+                }
+            ]
+        };
+
+        // 当前选择状态
+        let selectedCategoryId = '';
+        let selectedSubCategoryId = '';
+        let selectedCategoryPath = '';
+
+        // 模拟 handleCategorySelect 函数
+        function handleCategorySelect(categoryId) {
+            console.log('选择分类:', categoryId);
+            
+            // 查找分类信息并设置相应的状态
+            let categoryPath = '';
+            let parentCategoryId = '';
+            let subCategoryId = '';
+            
+            for (const category of navigationData.navigationItems) {
+                if (category.id === categoryId) {
+                    // 选择的是一级分类
+                    categoryPath = category.title;
+                    parentCategoryId = categoryId;
+                    subCategoryId = '';
+                    break;
+                }
+
+                if (category.subCategories) {
+                    for (const subCategory of category.subCategories) {
+                        if (subCategory.id === categoryId) {
+                            // 选择的是二级分类
+                            categoryPath = `${category.title} > ${subCategory.title}`;
+                            parentCategoryId = category.id;
+                            subCategoryId = categoryId;
+                            break;
+                        }
+                    }
+                }
+
+                if (categoryPath) break;
+            }
+
+            // 设置状态
+            selectedCategoryId = parentCategoryId;
+            selectedSubCategoryId = subCategoryId;
+            selectedCategoryPath = categoryPath;
+
+            console.log('分类选择结果:', {
+                categoryPath,
+                parentCategoryId,
+                subCategoryId,
+                isSubCategory: !!subCategoryId
+            });
+
+            // 更新UI
+            updateSelectionDisplay();
+            updateNavigationUI();
+        }
+
+        // 更新选择状态显示
+        function updateSelectionDisplay() {
+            document.getElementById('selected-path').textContent = selectedCategoryPath || '未选择';
+            document.getElementById('parent-category-id').textContent = selectedCategoryId || '-';
+            document.getElementById('sub-category-id').textContent = selectedSubCategoryId || '-';
+            
+            // 显示将要保存的ID（优先保存二级分类ID）
+            const categoryToSave = selectedSubCategoryId || selectedCategoryId;
+            document.getElementById('saved-category-id').textContent = categoryToSave || '-';
+        }
+
+        // 更新导航UI
+        function updateNavigationUI() {
+            const container = document.getElementById('navigation-container');
+            container.innerHTML = '';
+
+            navigationData.navigationItems.forEach(category => {
+                // 一级分类
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = `category ${selectedCategoryId === category.id && !selectedSubCategoryId ? 'selected' : ''}`;
+                categoryDiv.innerHTML = `
+                    <strong>${category.title}</strong>
+                    ${category.description ? `<br><small>${category.description}</small>` : ''}
+                `;
+                categoryDiv.onclick = () => handleCategorySelect(category.id);
+                container.appendChild(categoryDiv);
+
+                // 二级分类
+                if (category.subCategories && category.subCategories.length > 0) {
+                    category.subCategories.forEach(subCategory => {
+                        const subCategoryDiv = document.createElement('div');
+                        subCategoryDiv.className = `category subcategory ${selectedSubCategoryId === subCategory.id ? 'selected' : ''}`;
+                        subCategoryDiv.innerHTML = `
+                            ├─ <strong>${subCategory.title}</strong>
+                            ${subCategory.description ? `<br>&nbsp;&nbsp;&nbsp;&nbsp;<small>${subCategory.description}</small>` : ''}
+                        `;
+                        subCategoryDiv.onclick = () => handleCategorySelect(subCategory.id);
+                        container.appendChild(subCategoryDiv);
+                    });
+                }
+            });
+        }
+
+        // 保存选择
+        function saveSelection() {
+            const categoryToSave = selectedSubCategoryId || selectedCategoryId;
+            if (categoryToSave) {
+                localStorage.setItem('lastSelectedCategory_test', categoryToSave);
+                alert(`已保存分类选择: ${categoryToSave}\n路径: ${selectedCategoryPath}`);
+            } else {
+                alert('请先选择一个分类');
+            }
+        }
+
+        // 恢复选择
+        function restoreSelection() {
+            const lastCategoryId = localStorage.getItem('lastSelectedCategory_test');
+            if (lastCategoryId) {
+                if (isValidCategoryId(lastCategoryId)) {
+                    handleCategorySelect(lastCategoryId);
+                    alert(`已恢复上次选择: ${lastCategoryId}\n路径: ${selectedCategoryPath}`);
+                } else {
+                    alert(`上次选择的分类 ${lastCategoryId} 已不存在，选择默认分类`);
+                    handleCategorySelect(navigationData.navigationItems[0].id);
+                }
+            } else {
+                alert('没有保存的分类选择');
+            }
+        }
+
+        // 检查分类ID是否有效
+        function isValidCategoryId(categoryId) {
+            for (const category of navigationData.navigationItems) {
+                if (category.id === categoryId) {
+                    return true;
+                }
+
+                if (category.subCategories) {
+                    for (const subCategory of category.subCategories) {
+                        if (subCategory.id === categoryId) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // 清除存储
+        function clearStorage() {
+            localStorage.removeItem('lastSelectedCategory_test');
+            selectedCategoryId = '';
+            selectedSubCategoryId = '';
+            selectedCategoryPath = '';
+            updateSelectionDisplay();
+            updateNavigationUI();
+            alert('已清除存储的分类选择');
+        }
+
+        // 初始化
+        updateNavigationUI();
+        updateSelectionDisplay();
+    </script>
+</body>
+</html>

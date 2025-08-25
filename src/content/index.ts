@@ -1,4 +1,5 @@
 // 内容脚本 - 在网页中运行，获取页面信息
+import { getCurrentAuthenticatedInstance } from '@/lib/utils'
 
 // 获取页面元数据 - 通过API调用
 async function getPageMetadata() {
@@ -26,21 +27,8 @@ async function getPageMetadata() {
 
 // 调用网站API获取元数据
 async function fetchWebsiteMetadata(url: string) {
-  // 获取当前活跃的NavSphere实例
-  const instances = await chrome.storage.local.get('instances')
-  const settings = await chrome.storage.local.get('settings')
-
-  if (!instances.instances || instances.instances.length === 0) {
-    throw new Error('没有配置的NavSphere实例')
-  }
-
-  // 获取默认实例或第一个实例
-  const defaultInstanceId = settings.settings?.defaultInstanceId
-  const targetInstance = instances.instances.find((i: any) => i.id === defaultInstanceId) || instances.instances[0]
-
-  if (!targetInstance.authConfig?.isAuthenticated) {
-    throw new Error('实例未认证')
-  }
+  // 使用通用方法获取当前活跃且已认证的NavSphere实例
+  const targetInstance = await getCurrentAuthenticatedInstance()
 
   const response = await fetch(`${targetInstance.apiUrl}/api/website-metadata`, {
     method: 'POST',

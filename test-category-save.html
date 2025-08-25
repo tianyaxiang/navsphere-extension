@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试分类保存功能</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007acc;
+        }
+        .success {
+            background: #e8f5e8;
+            border-left-color: #28a745;
+        }
+        .info {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+        code {
+            background: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+        }
+        pre {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 分类保存功能测试</h1>
+    
+    <div class="test-section success">
+        <h2>✅ 修改完成</h2>
+        <p>已成功修改 PopupApp.tsx 中的分类保存逻辑，现在保存二级分类时会同时保存父分类 ID。</p>
+    </div>
+
+    <div class="test-section info">
+        <h2>📋 修改内容概述</h2>
+        
+        <h3>1. handleCategorySelect 函数</h3>
+        <p>修改了用户主动选择分类时的保存逻辑：</p>
+        <ul>
+            <li>选择二级分类时：保存二级分类 ID 和父分类 ID</li>
+            <li>选择一级分类时：只保存一级分类 ID，并清除之前的父分类 ID</li>
+        </ul>
+
+        <h3>2. handleQuickAdd 函数</h3>
+        <p>修改了成功添加书签后的分类保存逻辑：</p>
+        <ul>
+            <li>如果使用了二级分类：同时保存二级分类 ID 和父分类 ID</li>
+            <li>如果使用了一级分类：只保存一级分类 ID</li>
+        </ul>
+
+        <h3>3. restoreLastSelectedCategory 函数</h3>
+        <p>修改了恢复上次选择分类的逻辑：</p>
+        <ul>
+            <li>同时读取上次选择的分类 ID 和父分类 ID</li>
+            <li>在日志中显示父分类信息</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🗂️ 存储结构</h2>
+        <p>现在的存储结构包含两个键：</p>
+        <pre><code>// 一级分类选择
+{
+  "lastSelectedCategory_instanceId": "category-123"
+}
+
+// 二级分类选择
+{
+  "lastSelectedCategory_instanceId": "subcategory-456",
+  "lastSelectedParentCategory_instanceId": "category-123"
+}</code></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>🔄 工作流程</h2>
+        
+        <h3>选择二级分类时：</h3>
+        <ol>
+            <li>用户点击二级分类</li>
+            <li><code>handleCategorySelect</code> 被调用，传入二级分类 ID</li>
+            <li>函数识别这是二级分类，设置：
+                <ul>
+                    <li><code>selectedCategoryId</code> = 父分类 ID</li>
+                    <li><code>selectedSubCategoryId</code> = 二级分类 ID</li>
+                </ul>
+            </li>
+            <li>保存到存储：
+                <ul>
+                    <li><code>lastSelectedCategory_instanceId</code> = 二级分类 ID</li>
+                    <li><code>lastSelectedParentCategory_instanceId</code> = 父分类 ID</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>添加书签成功后：</h3>
+        <ol>
+            <li><code>handleQuickAdd</code> 调用 API 添加书签</li>
+            <li>API 调用成功后，再次保存分类选择</li>
+            <li>如果使用了二级分类，同时保存二级分类 ID 和父分类 ID</li>
+        </ol>
+
+        <h3>下次打开时：</h3>
+        <ol>
+            <li><code>restoreLastSelectedCategory</code> 读取存储的分类信息</li>
+            <li>如果有父分类 ID，说明上次选择的是二级分类</li>
+            <li>调用 <code>handleCategorySelect</code> 恢复选择状态</li>
+        </ol>
+    </div>
+
+    <div class="test-section highlight">
+        <h2>🧪 测试建议</h2>
+        <ol>
+            <li><strong>选择一级分类</strong>：验证只保存一级分类 ID</li>
+            <li><strong>选择二级分类</strong>：验证同时保存二级分类 ID 和父分类 ID</li>
+            <li><strong>添加书签</strong>：验证成功后正确保存使用的分类</li>
+            <li><strong>重新打开</strong>：验证能正确恢复上次的分类选择</li>
+            <li><strong>切换分类</strong>：验证从二级分类切换到一级分类时清除父分类 ID</li>
+        </ol>
+    </div>
+
+    <div class="test-section info">
+        <h2>📝 关键改进点</h2>
+        <ul>
+            <li>✅ 保存二级分类时同时保存父分类 ID</li>
+            <li>✅ 选择一级分类时清除之前的父分类 ID</li>
+            <li>✅ 恢复分类选择时读取父分类信息</li>
+            <li>✅ 添加详细的日志输出便于调试</li>
+            <li>✅ 保持向后兼容性</li>
+        </ul>
+    </div>
+
+    <script>
+        console.log('分类保存功能测试页面已加载');
+        console.log('请在浏览器扩展中测试以下场景：');
+        console.log('1. 选择一级分类并添加书签');
+        console.log('2. 选择二级分类并添加书签');
+        console.log('3. 重新打开扩展验证分类选择恢复');
+        console.log('4. 在不同分类间切换');
+    </script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NavSphere 扩展调试页面</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .debug-section {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007acc;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+        .warning {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        .step h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        .console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 NavSphere 扩展调试工具</h1>
+    
+    <div class="debug-section warning">
+        <h3>⚠️ 调试说明</h3>
+        <p>这个页面帮助你调试 NavSphere 扩展的"提示成功但没提交上"问题。</p>
+        <p>请按照以下步骤进行调试：</p>
+    </div>
+
+    <div class="step">
+        <h4>步骤 1: 检查扩展状态</h4>
+        <p>首先确认扩展已正确安装并启用。</p>
+        <button onclick="checkExtension()">检查扩展状态</button>
+        <div id="extension-status"></div>
+    </div>
+
+    <div class="step">
+        <h4>步骤 2: 测试快速添加功能</h4>
+        <p>在这个页面上测试快速添加功能，观察控制台输出。</p>
+        <button onclick="openPopup()">打开扩展弹窗</button>
+        <button onclick="simulateQuickAdd()">模拟右键添加</button>
+    </div>
+
+    <div class="step">
+        <h4>步骤 3: 查看控制台日志</h4>
+        <p>打开浏览器开发者工具 (F12)，查看 Console 标签页的输出。</p>
+        <p>特别关注以下关键日志：</p>
+        <ul>
+            <li><code>🚀 开始添加书签</code> - 确认添加流程开始</li>
+            <li><code>🔐 认证状态: true</code> - 确认认证成功</li>
+            <li><code>📡 调用API添加书签...</code> - 确认API调用开始</li>
+            <li><code>✅ API调用成功</code> - 确认API调用成功</li>
+            <li><code>❌ 添加书签失败</code> - 如果出现错误</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h4>步骤 4: 检查网络请求</h4>
+        <p>在开发者工具的 Network 标签页中，查看是否有对 NavSphere API 的请求。</p>
+        <p>查找类似这样的请求：<code>POST /api/navigation/{categoryId}/items</code></p>
+        <button onclick="showNetworkInstructions()">显示网络调试说明</button>
+        <div id="network-instructions" style="display: none;">
+            <div class="debug-section">
+                <h4>网络请求调试步骤：</h4>
+                <ol>
+                    <li>打开开发者工具 (F12)</li>
+                    <li>切换到 "Network" 标签页</li>
+                    <li>确保 "Preserve log" 选项已勾选</li>
+                    <li>尝试添加书签</li>
+                    <li>查看是否有对你的 NavSphere 实例的 POST 请求</li>
+                    <li>点击请求查看详细信息：
+                        <ul>
+                            <li>Request Headers - 检查 Authorization 头是否存在</li>
+                            <li>Request Payload - 检查发送的数据是否正确</li>
+                            <li>Response - 检查服务器返回的响应</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div class="step">
+        <h4>步骤 5: 常见问题排查</h4>
+        <div class="debug-section error">
+            <h4>🚨 可能的问题原因：</h4>
+            <ul>
+                <li><strong>认证问题</strong>：实例未完成 GitHub OAuth 认证</li>
+                <li><strong>网络问题</strong>：CORS 策略阻止了跨域请求</li>
+                <li><strong>API 端点问题</strong>：NavSphere 实例的 API 端点不正确或不可用</li>
+                <li><strong>数据验证失败</strong>：发送的书签数据不符合服务器要求</li>
+                <li><strong>服务器错误</strong>：NavSphere 服务器内部错误</li>
+            </ul>
+        </div>
+        
+        <div class="debug-section success">
+            <h4>✅ 解决方案：</h4>
+            <ul>
+                <li>确保在扩展设置页面完成了 GitHub OAuth 认证</li>
+                <li>检查 NavSphere 实例的 URL 是否正确且可访问</li>
+                <li>确认 NavSphere 服务器正在运行且 API 可用</li>
+                <li>检查浏览器是否阻止了跨域请求</li>
+                <li>查看 NavSphere 服务器的日志文件</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h3>📋 实时控制台输出</h3>
+        <p>以下是扩展的实时日志输出（需要打开浏览器控制台查看完整信息）：</p>
+        <div id="console-output" class="console-output">
+            等待日志输出...
+        </div>
+        <button onclick="clearConsole()">清空日志</button>
+    </div>
+
+    <script>
+        // 拦截 console.log 来显示日志
+        const originalLog = console.log;
+        const originalError = console.error;
+        const consoleOutput = document.getElementById('console-output');
+        
+        function addToConsole(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'warn' ? '#ffd93d' : '#6bcf7f';
+            consoleOutput.innerHTML += `<span style="color: #888">[${timestamp}]</span> <span style="color: ${color}">${message}</span>\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        function checkExtension() {
+            const statusDiv = document.getElementById('extension-status');
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+                statusDiv.innerHTML = '<div class="debug-section success">✅ 扩展已正确加载</div>';
+                console.log('✅ NavSphere 扩展状态正常');
+            } else {
+                statusDiv.innerHTML = '<div class="debug-section error">❌ 扩展未加载或权限不足</div>';
+                console.error('❌ NavSphere 扩展未正确加载');
+            }
+        }
+
+        function openPopup() {
+            if (typeof chrome !== 'undefined' && chrome.action) {
+                chrome.action.openPopup();
+                console.log('🔧 尝试打开扩展弹窗');
+            } else {
+                console.error('❌ 无法打开扩展弹窗，请手动点击扩展图标');
+                alert('请手动点击浏览器工具栏中的 NavSphere 扩展图标');
+            }
+        }
+
+        function simulateQuickAdd() {
+            console.log('🧪 模拟快速添加功能');
+            console.log('📄 当前页面信息:', {
+                title: document.title,
+                url: window.location.href,
+                description: document.querySelector('meta[name="description"]')?.content || '',
+                favicon: document.querySelector('link[rel="icon"]')?.href || '/favicon.ico'
+            });
+            
+            // 模拟右键菜单点击
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                chrome.runtime.sendMessage({
+                    type: 'QUICK_ADD_FROM_CONTEXT_MENU',
+                    pageInfo: {
+                        title: document.title,
+                        url: window.location.href,
+                        description: document.querySelector('meta[name="description"]')?.content || '',
+                        favicon: document.querySelector('link[rel="icon"]')?.href || '/favicon.ico'
+                    }
+                });
+                console.log('📤 已发送快速添加消息到后台脚本');
+            }
+        }
+
+        function showNetworkInstructions() {
+            const instructions = document.getElementById('network-instructions');
+            instructions.style.display = instructions.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '控制台已清空...\n';
+        }
+
+        // 页面加载完成后自动检查扩展状态
+        window.addEventListener('load', () => {
+            setTimeout(checkExtension, 1000);
+            console.log('🔧 NavSphere 调试页面已加载');
+            console.log('📋 请按照页面上的步骤进行调试');
+        });
+    </script>
+</body>
+</html>

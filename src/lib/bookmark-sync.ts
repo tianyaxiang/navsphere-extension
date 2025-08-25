@@ -1,6 +1,6 @@
 import { StorageManager } from './storage'
 import type { BookmarkItem, BookmarkFolder, NavSphereInstance } from '@/types'
-import { getFaviconUrl } from './utils'
+import { getFaviconUrl, getCurrentAuthenticatedInstance } from './utils'
 
 export interface SyncResult {
   success: boolean
@@ -33,20 +33,29 @@ export class BookmarkSyncManager {
   /**
    * 开始同步书签到指定实例
    */
-  async syncBookmarks(instanceId: string): Promise<SyncResult> {
+  async syncBookmarks(instanceId?: string): Promise<SyncResult> {
     try {
       this.updateProgress('reading', 0, 100, '正在读取浏览器书签...')
 
       // 1. 获取实例信息
-      const instances = await StorageManager.getInstances()
-      const instance = instances.find(i => i.id === instanceId)
-      
-      if (!instance) {
-        throw new Error('实例不存在')
-      }
+      let instance: NavSphereInstance
+      if (instanceId) {
+        // 如果指定了实例ID，获取特定实例
+        const instances = await StorageManager.getInstances()
+        const targetInstance = instances.find(i => i.id === instanceId)
+        
+        if (!targetInstance) {
+          throw new Error('指定的实例不存在')
+        }
 
-      if (!instance.authConfig.isAuthenticated) {
-        throw new Error('实例未认证，请先完成GitHub OAuth认证')
+        if (!targetInstance.authConfig.isAuthenticated) {
+          throw new Error('指定的实例未认证，请先完成GitHub OAuth认证')
+        }
+
+        instance = targetInstance
+      } else {
+        // 如果没有指定实例ID，使用当前活跃的已认证实例
+        instance = await getCurrentAuthenticatedInstance()
       }
 
       // 2. 获取同步设置

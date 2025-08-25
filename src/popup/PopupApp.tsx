@@ -5,8 +5,12 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StorageManager } from '@/lib/storage'
 import { NavSphereAPI } from '@/lib/api'
+import { getCurrentActiveInstance } from '@/lib/utils'
 import type { NavSphereInstance, NavigationData, PageInfo, QuickAddData } from '@/types'
 import { Settings, Plus, ExternalLink, Loader2, Check, X } from 'lucide-react'
+
+// 默认图标 - 一个简单的用户头像SVG
+const DEFAULT_ICON = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiByeD0iMiIgZmlsbD0iIzY2NjY2NiIvPgo8cGF0aCBkPSJNOCA0QzYuMzQzMTUgNCA1IDUuMzQzMTUgNSA3QzUgOC42NTY4NSA2LjM0MzE1IDEwIDggMTBDOS42NTY4NSAxMCAxMSA4LjY1Njg1IDExIDdDMTEgNS4zNDMxNSA5LjY1Njg1IDQgOCA0WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTggMTJDNi4zNDMxNSAxMiA1IDEzLjM0MzEgNSAxNUg5SDExQzExIDEzLjM0MzEgOS42NTY4NSAxMiA4IDEyWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+'
 
 export default function PopupApp() {
   const [instances, setInstances] = useState<NavSphereInstance[]>([])
@@ -14,6 +18,7 @@ export default function PopupApp() {
   const [navigationData, setNavigationData] = useState<NavigationData | null>(null)
   const [pageInfo, setPageInfo] = useState<PageInfo | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string>('')
   const [selectedCategoryPath, setSelectedCategoryPath] = useState<string>('')
   const [customTitle, setCustomTitle] = useState('')
   const [customDescription, setCustomDescription] = useState('')
@@ -133,7 +138,9 @@ export default function PopupApp() {
         console.log('API失败，使用页面默认favicon:', fallbackFavicon)
         setCustomIcon(fallbackFavicon)
       } else {
-        console.log('API失败且无页面favicon，保持空值')
+        console.log('API失败且无页面favicon，使用默认图标')
+        // 使用一个默认的图标URL，避免提交空值
+        setCustomIcon(DEFAULT_ICON)
       }
     } finally {
       console.log('fetchMetadataFromAPI 完成，设置 metadataLoading = false')
@@ -153,8 +160,7 @@ export default function PopupApp() {
       }
 
       // 获取默认实例
-      const settings = await StorageManager.getSettings()
-      const defaultInstance = instanceList.find(i => i.id === settings.defaultInstanceId) || instanceList[0]
+      const defaultInstance = await getCurrentActiveInstance()
       setSelectedInstance(defaultInstance)
 
       // 获取快速添加数据
@@ -175,6 +181,9 @@ export default function PopupApp() {
           console.log('快速添加数据中无URL，跳过API调用')
           if (quickAddData.pageInfo.favicon) {
             setCustomIcon(quickAddData.pageInfo.favicon)
+          } else {
+            // 使用默认图标
+            setCustomIcon(DEFAULT_ICON)
           }
         }
         console.log('设置的页面信息:', quickAddData.pageInfo)
@@ -209,7 +218,7 @@ export default function PopupApp() {
               setCustomDescription(response.data.description || '')
               setCustomIcon('') // 不设置默认值，等待API返回
               // 通过API获取描述和图标
-              await fetchMetadataFromAPI(response.data.url, defaultInstance, response.data.favicon)
+              await fetchMetadataFromAPI(response.data.url, defaultInstance, response.data.favicon || '')
             } else {
               // 如果内容脚本获取失败，使用标签页基本信息
               const pageInfo = {
@@ -225,9 +234,10 @@ export default function PopupApp() {
               setCustomIcon('') // 不设置默认值，等待API返回
               // 通过API获取描述和图标
               if (pageInfo.url) {
-                await fetchMetadataFromAPI(pageInfo.url, defaultInstance, pageInfo.favicon)
+                await fetchMetadataFromAPI(pageInfo.url, defaultInstance, pageInfo.favicon || '')
               } else {
-                console.log('无法获取页面URL，跳过API调用')
+                console.log('无法获取页面URL，使用默认图标')
+                setCustomIcon(DEFAULT_ICON)
               }
             }
           } catch (error) {
@@ -245,9 +255,10 @@ export default function PopupApp() {
             setCustomIcon('') // 不设置默认值，等待API返回
             // 通过API获取描述和图标
             if (pageInfo.url) {
-              await fetchMetadataFromAPI(pageInfo.url, defaultInstance, pageInfo.favicon)
+              await fetchMetadataFromAPI(pageInfo.url, defaultInstance, pageInfo.favicon || '')
             } else {
-              console.log('无法获取页面URL，跳过API调用')
+              console.log('无法获取页面URL，使用默认图标')
+              setCustomIcon(DEFAULT_ICON)
             }
           }
         }
@@ -288,14 +299,18 @@ export default function PopupApp() {
   // 恢复上次选择的分类
   async function restoreLastSelectedCategory(instanceId: string, navigationData: NavigationData) {
     try {
-      // 从存储中获取上次选择的分类
-      const result = await chrome.storage.local.get(`lastSelectedCategory_${instanceId}`)
+      // 从存储中获取上次选择的分类和父分类
+      const result = await chrome.storage.local.get([
+        `lastSelectedCategory_${instanceId}`,
+        `lastSelectedParentCategory_${instanceId}`
+      ])
       const lastCategoryId = result[`lastSelectedCategory_${instanceId}`]
+      const lastParentCategoryId = result[`lastSelectedParentCategory_${instanceId}`]
 
       if (lastCategoryId && isValidCategoryId(lastCategoryId, navigationData)) {
         // 如果上次选择的分类仍然存在，则选择它
         await handleCategorySelect(lastCategoryId, navigationData, true)
-        console.log('恢复上次选择的分类:', lastCategoryId)
+        console.log('恢复上次选择的分类:', lastCategoryId, lastParentCategoryId ? `(父分类: ${lastParentCategoryId})` : '')
       } else if (navigationData.navigationItems.length > 0) {
         // 否则选择第一个分类
         await handleCategorySelect(navigationData.navigationItems[0].id, navigationData, false)
@@ -336,10 +351,10 @@ export default function PopupApp() {
 
     // 移除认证状态检查，允许未认证的实例提交站点
 
-    // 如果图标为空且不在加载中，显示错误
+    // 如果图标为空且不在加载中，使用默认图标
     if ((!customIcon || !customIcon.trim()) && !metadataLoading) {
-      setError('图标地址是必填字段，请等待自动获取或手动输入')
-      return
+      console.log('图标为空，使用默认图标')
+      setCustomIcon(DEFAULT_ICON)
     }
 
     setLoading(true)
@@ -379,15 +394,28 @@ export default function PopupApp() {
 
       const api = new NavSphereAPI(selectedInstance)
       console.log('📡 调用API添加书签...')
-      await api.addNavigationItem(selectedCategoryId, bookmarkData)
+      console.log('📂 传递的分类信息:', {
+        categoryId: selectedCategoryId,
+        subCategoryId: selectedSubCategoryId || undefined
+      })
+      await api.addNavigationItem(selectedCategoryId, bookmarkData, selectedSubCategoryId || undefined)
       console.log('✅ API调用成功')
 
       // 保存成功使用的分类作为下次的默认选择
+      // 如果选择了二级分类，保存二级分类ID和父分类ID；否则只保存一级分类ID
       try {
-        await chrome.storage.local.set({
-          [`lastSelectedCategory_${selectedInstance.id}`]: selectedCategoryId
-        })
-        console.log('保存成功使用的分类:', selectedCategoryId)
+        const categoryToSave = selectedSubCategoryId || selectedCategoryId
+        const saveData: any = {
+          [`lastSelectedCategory_${selectedInstance.id}`]: categoryToSave
+        }
+
+        // 如果选择了二级分类，同时保存父分类ID
+        if (selectedSubCategoryId) {
+          saveData[`lastSelectedParentCategory_${selectedInstance.id}`] = selectedCategoryId
+        }
+
+        await chrome.storage.local.set(saveData)
+        console.log('保存成功使用的分类:', categoryToSave, selectedSubCategoryId ? `(二级分类: ${selectedSubCategoryId}, 父分类: ${selectedCategoryId})` : '(一级分类)')
       } catch (error) {
         console.error('保存分类选择失败:', error)
       }
@@ -426,21 +454,29 @@ export default function PopupApp() {
   }
 
   async function handleCategorySelect(categoryId: string, navigationData: NavigationData, isRestored: boolean = false) {
-    setSelectedCategoryId(categoryId)
     setIsRestoredSelection(isRestored)
 
-    // 查找分类路径
+    // 查找分类信息并设置相应的状态
     let categoryPath = ''
+    let parentCategoryId = ''
+    let subCategoryId = ''
+
     for (const category of navigationData.navigationItems) {
       if (category.id === categoryId) {
+        // 选择的是一级分类
         categoryPath = category.title
+        parentCategoryId = categoryId
+        subCategoryId = ''
         break
       }
 
       if (category.subCategories) {
         for (const subCategory of category.subCategories) {
           if (subCategory.id === categoryId) {
+            // 选择的是二级分类
             categoryPath = `${category.title} > ${subCategory.title}`
+            parentCategoryId = category.id
+            subCategoryId = categoryId
             break
           }
         }
@@ -449,15 +485,36 @@ export default function PopupApp() {
       if (categoryPath) break
     }
 
+    // 设置状态
+    setSelectedCategoryId(parentCategoryId)
+    setSelectedSubCategoryId(subCategoryId)
     setSelectedCategoryPath(categoryPath)
 
+    console.log('分类选择:', {
+      categoryPath,
+      parentCategoryId,
+      subCategoryId,
+      isSubCategory: !!subCategoryId
+    })
+
     // 保存当前选择到存储中（只有在用户主动选择时才保存）
+    // 现在支持保存二级分类ID和父分类ID
     if (selectedInstance && !isRestored) {
       try {
-        await chrome.storage.local.set({
+        const saveData: any = {
           [`lastSelectedCategory_${selectedInstance.id}`]: categoryId
-        })
-        console.log('保存分类选择:', categoryId)
+        }
+
+        // 如果选择了二级分类，同时保存父分类ID
+        if (subCategoryId) {
+          saveData[`lastSelectedParentCategory_${selectedInstance.id}`] = parentCategoryId
+        } else {
+          // 如果选择的是一级分类，清除之前保存的父分类ID
+          await chrome.storage.local.remove(`lastSelectedParentCategory_${selectedInstance.id}`)
+        }
+
+        await chrome.storage.local.set(saveData)
+        console.log('保存分类选择:', categoryId, subCategoryId ? `(二级分类: ${subCategoryId}, 父分类: ${parentCategoryId})` : '(一级分类)')
       } catch (error) {
         console.error('保存分类选择失败:', error)
       }
@@ -774,7 +831,7 @@ export default function PopupApp() {
                       {/* 一级分类 */}
                       <div
                         onClick={() => handleCategorySelect(category.id, navigationData, false)}
-                        className={`p-3 rounded-md cursor-pointer transition-colors ${selectedCategoryId === category.id
+                        className={`p-3 rounded-md cursor-pointer transition-colors ${selectedCategoryId === category.id && !selectedSubCategoryId
                           ? 'bg-primary text-primary-foreground'
                           : 'hover:bg-accent'
                           }`}
@@ -794,7 +851,7 @@ export default function PopupApp() {
                             <div
                               key={subCategory.id}
                               onClick={() => handleCategorySelect(subCategory.id, navigationData, false)}
-                              className={`p-2 rounded-md cursor-pointer transition-colors text-sm ${selectedCategoryId === subCategory.id
+                              className={`p-2 rounded-md cursor-pointer transition-colors text-sm ${selectedSubCategoryId === subCategory.id
                                 ? 'bg-primary text-primary-foreground'
                                 : 'hover:bg-accent/50'
                                 }`}
@@ -857,7 +914,7 @@ export default function PopupApp() {
             <div className="flex gap-2">
               <Button
                 onClick={handleQuickAdd}
-                disabled={loading || categoriesLoading || !selectedCategoryId || !!categoriesError || metadataLoading || (!customIcon.trim() && !metadataLoading)}
+                disabled={loading || categoriesLoading || !selectedCategoryId || !!categoriesError || metadataLoading}
                 className="flex-1"
               >
                 {loading ? (
