@@ -34,7 +34,7 @@ const DEFAULT_INSTANCE: NavSphereInstance = {
   description: 'NavSphere 官方实例',
   title: 'NavSphere 官方导航',
   authConfig: {
-    isAuthenticated: false,
+    isAuthenticated: true,
   },
   createdAt: Date.now(),
   lastUsed: Date.now(),
