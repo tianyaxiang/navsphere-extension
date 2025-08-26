@@ -180,23 +180,14 @@ let lastUrl = window.location.href
 const observer = new MutationObserver(() => {
   if (window.location.href !== lastUrl) {
     lastUrl = window.location.href
-    // URL 变化时通知后台脚本
-    getPageMetadata()
-      .then(metadata => {
-        chrome.runtime.sendMessage({
-          type: 'PAGE_CHANGED',
-          data: metadata
-        })
-      })
-      .catch(error => {
-        console.error('页面变化时获取元数据失败:', error)
-        // 使用备用方案
-        const fallbackMetadata = getLocalPageMetadata()
-        chrome.runtime.sendMessage({
-          type: 'PAGE_CHANGED',
-          data: fallbackMetadata
-        })
-      })
+    // URL 变化时通知后台脚本（只发送基本信息）
+    chrome.runtime.sendMessage({
+      type: 'PAGE_CHANGED',
+      data: {
+        url: window.location.href,
+        title: document.title
+      }
+    })
   }
 })
 
@@ -206,23 +197,15 @@ observer.observe(document.body, {
   subtree: true
 })
 
-// 页面加载完成后发送初始信息
-const sendPageLoadedMessage = async () => {
-  try {
-    const metadata = await getPageMetadata()
-    chrome.runtime.sendMessage({
-      type: 'PAGE_LOADED',
-      data: metadata
-    })
-  } catch (error) {
-    console.error('页面加载时获取元数据失败:', error)
-    // 使用备用方案
-    const fallbackMetadata = getLocalPageMetadata()
-    chrome.runtime.sendMessage({
-      type: 'PAGE_LOADED',
-      data: fallbackMetadata
-    })
-  }
+// 页面加载完成后发送初始信息（不获取元数据）
+const sendPageLoadedMessage = () => {
+  chrome.runtime.sendMessage({
+    type: 'PAGE_LOADED',
+    data: {
+      url: window.location.href,
+      title: document.title
+    }
+  })
 }
 
 if (document.readyState === 'loading') {
