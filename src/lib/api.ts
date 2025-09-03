@@ -139,7 +139,7 @@ export class NavSphereAPI {
           ]
         }]
       } as unknown as NavigationItem
-      endpoint = `/api/navigation/${categoryId}`
+      endpoint = `/api/extension/${categoryId}`
     
 
     console.log('✨ 处理后的项目:', newItem)
