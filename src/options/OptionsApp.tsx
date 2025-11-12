@@ -892,20 +892,22 @@ function AuthTab({
   const [loading, setLoading] = useState<string | null>(null)
   const [githubClientId, setGithubClientId] = useState('')
   const [selectedInstance, setSelectedInstance] = useState('')
+  const [githubClientSecrets, setGithubClientSecrets] = useState('')
 
   async function handleConfigureOAuth() {
-    if (!selectedInstance || !githubClientId) return
+    if (!selectedInstance || !githubClientId||!githubClientSecrets) return
 
     setLoading('configuring')
     try {
       const { configureGitHubOAuth } = await import('@/lib/github-auth')
-      await configureGitHubOAuth(selectedInstance, githubClientId)
+      await configureGitHubOAuth(selectedInstance, githubClientId,githubClientSecrets)
 
       const updatedInstances = await StorageManager.getInstances()
       onInstancesChange(updatedInstances)
 
       setGithubClientId('')
       setSelectedInstance('')
+      setGithubClientSecrets('') 
     } catch (error) {
       console.error('OAuth配置失败:', error)
       alert('OAuth配置失败，请检查设置')
@@ -997,9 +999,21 @@ function AuthTab({
             </p>
           </div>
 
+          <div>
+            <Label htmlFor="github-client-Secrets">GitHub Client Secrets</Label>
+            <Input
+              id="github-client-Secrets"
+              value={githubClientSecrets}
+              onChange={(e) => setGithubClientSecrets(e.target.value)}
+              placeholder="输入您的 GitHub OAuth App Client Secrets"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              在 GitHub Settings → Developer settings → OAuth Apps 中创建应用获取
+            </p>
+          </div>
           <Button
             onClick={handleConfigureOAuth}
-            disabled={!selectedInstance || !githubClientId || loading === 'configuring'}
+            disabled={!selectedInstance || !githubClientId || !githubClientSecrets || loading === 'configuring'}
           >
             {loading === 'configuring' ? (
               <Loader2 className="w-4 h-4 animate-spin mr-2" />

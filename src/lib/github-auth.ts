@@ -8,6 +8,7 @@ const GITHUB_USER_URL = 'https://api.github.com/user'
 
 export interface GitHubOAuthConfig {
   clientId: string
+  clientSecret: string
   scope?: string
   redirectUri?: string
 }
@@ -16,11 +17,13 @@ export class GitHubAuth {
   private clientId: string
   private scope: string
   private redirectUri: string
+  private clientSecret: string
 
   constructor(config: GitHubOAuthConfig) {
     this.clientId = config.clientId
     this.scope = config.scope || 'user:email'
     this.redirectUri = config.redirectUri || chrome.identity.getRedirectURL()
+    this.clientSecret = config.clientSecret || ''
   }
 
   /**
@@ -155,6 +158,7 @@ export class GitHubAuth {
       body: JSON.stringify({
         client_id: this.clientId,
         code: code,
+        client_secret: this.clientSecret, 
         redirect_uri: this.redirectUri
       })
     })
@@ -186,7 +190,8 @@ export class GitHubAuth {
  */
 export async function configureGitHubOAuth(
   instanceId: string, 
-  clientId: string
+  clientId: string,
+  clientSecret: string,
 ): Promise<void> {
   const instance = await getInstanceById(instanceId)
 
@@ -194,6 +199,7 @@ export async function configureGitHubOAuth(
     authConfig: {
       ...instance.authConfig,
       githubClientId: clientId,
+      githubClientSecret: clientSecret,
       isAuthenticated: false
     }
   })
@@ -210,7 +216,8 @@ export async function authenticateGitHub(instanceId: string): Promise<void> {
   }
 
   const auth = new GitHubAuth({
-    clientId: instance.authConfig.githubClientId
+    clientId: instance.authConfig.githubClientId || '',
+    clientSecret: instance.authConfig.githubClientSecret || ''
   })
 
   const { accessToken, userInfo } = await auth.authenticate()
@@ -243,7 +250,8 @@ export async function checkAuthStatus(instanceId: string): Promise<boolean> {
   }
 
   const auth = new GitHubAuth({
-    clientId: instance.authConfig.githubClientId || ''
+    clientId: instance.authConfig.githubClientId || '',
+    clientSecret: instance.authConfig.githubClientSecret || ''
   })
 
   return await auth.validateToken(instance.authConfig.accessToken)
@@ -263,7 +271,8 @@ export async function logoutGitHub(instanceId: string): Promise<void> {
   if (instance.authConfig.accessToken && instance.authConfig.githubClientId) {
     try {
       const auth = new GitHubAuth({
-        clientId: instance.authConfig.githubClientId
+        clientId: instance.authConfig.githubClientId || '',
+        clientSecret: instance.authConfig.githubClientSecret || ''
       })
       await auth.revokeToken(instance.authConfig.accessToken)
     } catch (error) {
