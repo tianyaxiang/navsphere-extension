@@ -14,12 +14,7 @@ export class NavSphereAPI {
       ...(options.headers as Record<string, string> || {}),
     }
 
-    if (this.instance.authConfig.accessToken) {
-      headers['Authorization'] = `Bearer ${this.instance.authConfig.accessToken}`
-      console.log('添加认证头:', `Bearer ${this.instance.authConfig.accessToken.slice(0, 10)}...`)
-    } else {
-      console.log('⚠️ 没有认证token - 这可能导致请求失败')
-    }
+
 
     console.log('🚀 发起请求:', url)
     console.log('📋 请求选项:', { ...options, headers })

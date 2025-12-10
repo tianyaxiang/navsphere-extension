@@ -37,7 +37,7 @@ export default function PopupApp() {
 
   // 通过API获取网站元数据
   async function fetchMetadataFromAPI(url: string, instance: NavSphereInstance, fallbackFavicon?: string) {
-    console.log('fetchMetadataFromAPI 被调用:', { url, instance: instance.name, isAuthenticated: instance.authConfig?.isAuthenticated, fallbackFavicon })
+    console.log('fetchMetadataFromAPI 被调用:', { url, instance: instance.name, fallbackFavicon })
 
     // 验证URL
     if (!url || !url.trim()) {
@@ -102,7 +102,6 @@ export default function PopupApp() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${instance.authConfig?.accessToken}`,
         },
         body: JSON.stringify({ url }),
       })
@@ -123,15 +122,7 @@ export default function PopupApp() {
       }
     } catch (error) {
       console.error('API获取元数据失败:', error)
-
-      // 如果是认证相关错误，设置错误提示
-      if (error instanceof Error && (error.message.includes('401') || error.message.includes('403'))) {
-        setError('获取网站元数据失败：需要认证，请先在设置页面完成GitHub登录')
-      } else if (!instance.authConfig?.isAuthenticated) {
-        setError('获取网站元数据失败：实例未认证，请先在设置页面完成GitHub登录')
-      } else {
-        setError('获取网站元数据失败，请检查网络连接或实例配置')
-      }
+      setError('获取网站元数据失败，请检查网络连接或实例配置')
 
       // API失败时使用页面的默认favicon作为备用
       if (fallbackFavicon) {
@@ -286,11 +277,7 @@ export default function PopupApp() {
     } catch (err) {
       console.error('Failed to load navigation data:', err)
       // 如果是认证相关错误，提示用户去设置页面认证
-      if (err instanceof Error && (err.message.includes('401') || err.message.includes('403'))) {
-        setCategoriesError('需要认证，请先在设置页面完成GitHub登录')
-      } else {
-        setCategoriesError('加载导航数据失败，请检查网络连接或实例配置')
-      }
+      setCategoriesError('加载导航数据失败，请检查网络连接或实例配置')
     } finally {
       setCategoriesLoading(false)
     }
@@ -365,7 +352,6 @@ export default function PopupApp() {
       console.log('🏠 选中实例:', selectedInstance.name, selectedInstance.apiUrl)
       console.log('📄 页面信息:', pageInfo)
       console.log('📂 选中分类ID:', selectedCategoryId)
-      console.log('🔐 认证状态:', selectedInstance.authConfig.isAuthenticated)
 
       const bookmarkData = {
         title: (customTitle && customTitle.trim()) || pageInfo.title,
@@ -436,9 +422,7 @@ export default function PopupApp() {
       if (err instanceof Error) {
         console.error('错误详情:', err.message)
 
-        if (err.message.includes('401') || err.message.includes('403') || err.message.includes('未认证')) {
-          setError('需要认证，请先在设置页面完成GitHub登录')
-        } else if (err.message.includes('网络') || err.message.includes('Network') || err.message.includes('fetch')) {
+        if (err.message.includes('网络') || err.message.includes('Network') || err.message.includes('fetch')) {
           setError('网络连接失败，请检查网络连接和实例配置')
         } else if (err.message.includes('分类ID') || err.message.includes('标题') || err.message.includes('链接')) {
           setError(`数据验证失败：${err.message}`)
@@ -554,7 +538,7 @@ export default function PopupApp() {
             <ExternalLink className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-xl font-bold text-gray-900">NavSphere 扩展</h1>
-          <p className="text-sm text-gray-600">快速书签管理和同步工具</p>
+          <p className="text-sm text-gray-600">快速书签管理工具</p>
         </div>
 
         {/* 功能特性 */}
@@ -584,13 +568,6 @@ export default function PopupApp() {
                 <p className="text-xs text-gray-600">自动获取页面信息，支持选择或创建分类</p>
               </div>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-              <div>
-                <p className="text-sm font-medium">书签同步</p>
-                <p className="text-xs text-gray-600">同步浏览器书签到 NavSphere 平台</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -606,10 +583,6 @@ export default function PopupApp() {
             </div>
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">2</div>
-              <p className="text-sm">完成 GitHub OAuth 认证</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">3</div>
               <p className="text-sm">开始快速添加书签</p>
             </div>
           </CardContent>

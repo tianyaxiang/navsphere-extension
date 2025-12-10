@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,18 +13,15 @@ import {
   Settings,
   Globe,
   Github,
-  Bookmark,
   Loader2,
   Check,
   X,
   ExternalLink,
   Home,
-  Server,
-  Key,
-  RefreshCw as Sync
+  Server
 } from 'lucide-react'
 
-type TabType = 'welcome' | 'instances' | 'auth' | 'sync' | 'settings'
+type TabType = 'welcome' | 'instances' | 'settings'
 
 export default function OptionsApp() {
   const [activeTab, setActiveTab] = useState<TabType>('welcome')
@@ -60,8 +57,6 @@ export default function OptionsApp() {
   const tabs = [
     { id: 'welcome', label: '欢迎', icon: Home },
     { id: 'instances', label: '实例管理', icon: Server },
-    { id: 'auth', label: '认证设置', icon: Key },
-    { id: 'sync', label: '书签同步', icon: Sync },
     { id: 'settings', label: '通用设置', icon: Settings },
   ]
 
@@ -132,20 +127,6 @@ export default function OptionsApp() {
             />
           )}
 
-          {activeTab === 'auth' && (
-            <AuthTab
-              instances={instances}
-              onInstancesChange={setInstances}
-            />
-          )}
-
-          {activeTab === 'sync' && (
-            <SyncTab
-              settings={settings}
-              onSettingsChange={setSettings}
-            />
-          )}
-
           {activeTab === 'settings' && (
             <SettingsTab
               settings={settings}
@@ -170,7 +151,7 @@ function WelcomeTab() {
         </div>
         <h1 className="text-3xl font-bold mb-2">欢迎使用 NavSphere 扩展</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          一个强大的浏览器书签管理和同步工具，让您的导航体验更加便捷高效
+          一个强大的浏览器书签管理工具，让您的导航体验更加便捷高效
         </p>
       </div>
 
@@ -182,26 +163,6 @@ function WelcomeTab() {
             <h3 className="text-lg font-semibold mb-2">多实例管理</h3>
             <p className="text-muted-foreground">
               连接和管理多个 NavSphere 实例，在不同的导航网站之间轻松切换
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6 text-center">
-            <Bookmark className="w-12 h-12 mx-auto mb-4 text-primary" />
-            <h3 className="text-lg font-semibold mb-2">书签同步</h3>
-            <p className="text-muted-foreground">
-              将浏览器书签同步到您的 NavSphere 实例，实现跨设备访问
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6 text-center">
-            <Github className="w-12 h-12 mx-auto mb-4 text-primary" />
-            <h3 className="text-lg font-semibold mb-2">GitHub 集成</h3>
-            <p className="text-muted-foreground">
-              通过 GitHub OAuth 认证，安全地管理您的个人导航数据
             </p>
           </CardContent>
         </Card>
@@ -221,17 +182,7 @@ function WelcomeTab() {
             <Globe className="w-12 h-12 mx-auto mb-4 text-primary" />
             <h3 className="text-lg font-semibold mb-2">跨平台支持</h3>
             <p className="text-muted-foreground">
-              支持 Chrome、Edge 等主流浏览器，数据云端同步
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6 text-center">
-            <Key className="w-12 h-12 mx-auto mb-4 text-primary" />
-            <h3 className="text-lg font-semibold mb-2">安全可靠</h3>
-            <p className="text-muted-foreground">
-              采用标准 OAuth 认证，数据传输加密，保护您的隐私安全
+              支持 Chrome、Edge 等主流浏览器
             </p>
           </CardContent>
         </Card>
@@ -268,21 +219,9 @@ function WelcomeTab() {
                   2
                 </div>
                 <div>
-                  <h4 className="font-semibold">配置 GitHub 认证</h4>
+                  <h4 className="font-semibold">个性化设置</h4>
                   <p className="text-sm text-muted-foreground">
-                    在"认证设置"页面配置 GitHub OAuth 以启用同步功能
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
-                  3
-                </div>
-                <div>
-                  <h4 className="font-semibold">同步书签</h4>
-                  <p className="text-sm text-muted-foreground">
-                    在"书签同步"页面将浏览器书签同步到您的导航网站
+                    在"通用设置"页面调整扩展的行为和外观
                   </p>
                 </div>
               </div>
@@ -291,19 +230,7 @@ function WelcomeTab() {
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
-                  4
-                </div>
-                <div>
-                  <h4 className="font-semibold">个性化设置</h4>
-                  <p className="text-sm text-muted-foreground">
-                    在"通用设置"页面调整扩展的行为和外观
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
-                  5
+                  3
                 </div>
                 <div>
                   <h4 className="font-semibold">开始使用</h4>
@@ -461,9 +388,6 @@ function InstancesTab({
         title: validationResult?.metadata?.title,
         description: validationResult?.metadata?.description,
         favicon: validationResult?.metadata?.favicon,
-        authConfig: {
-          isAuthenticated: true,
-        },
         createdAt: Date.now(),
         lastUsed: 0,
       }
@@ -727,7 +651,7 @@ function InstancesTab({
             <div className="flex gap-2">
               <Button
                 onClick={handleAddInstance}
-                disabled={loading || !newInstance.name || !newInstance.url || (validationResult && !validationResult.isValid)}
+                disabled={loading || !newInstance.name || !newInstance.url || (validationResult !== null && !validationResult.isValid)}
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -774,8 +698,7 @@ function InstancesTab({
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`instance-status ${instance.authConfig.isAuthenticated ? 'online' : 'offline'
-                      }`} />
+                    <div className="instance-status online" />
                     {instance.favicon && (
                       <img
                         src={instance.favicon}
@@ -793,12 +716,6 @@ function InstancesTab({
                       )}
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{instance.url}</span>
-                        <span>•</span>
-                        <span className={
-                          instance.authConfig.isAuthenticated ? 'text-green-600' : 'text-red-600'
-                        }>
-                          {instance.authConfig.isAuthenticated ? '已认证' : '未认证'}
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -877,613 +794,6 @@ function InstancesTab({
           </div>
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-// 认证设置标签页
-function AuthTab({
-  instances,
-  onInstancesChange
-}: {
-  instances: NavSphereInstance[]
-  onInstancesChange: (instances: NavSphereInstance[]) => void
-}) {
-  const [loading, setLoading] = useState<string | null>(null)
-  const [githubClientId, setGithubClientId] = useState('')
-  const [selectedInstance, setSelectedInstance] = useState('')
-
-  async function handleConfigureOAuth() {
-    if (!selectedInstance || !githubClientId) return
-
-    setLoading('configuring')
-    try {
-      const { configureGitHubOAuth } = await import('@/lib/github-auth')
-      await configureGitHubOAuth(selectedInstance, githubClientId)
-
-      const updatedInstances = await StorageManager.getInstances()
-      onInstancesChange(updatedInstances)
-
-      setGithubClientId('')
-      setSelectedInstance('')
-    } catch (error) {
-      console.error('OAuth配置失败:', error)
-      alert('OAuth配置失败，请检查设置')
-    } finally {
-      setLoading(null)
-    }
-  }
-
-  async function handleAuthenticate(instanceId: string) {
-    setLoading(instanceId)
-    try {
-      const { authenticateGitHub } = await import('@/lib/github-auth')
-      await authenticateGitHub(instanceId)
-
-      const updatedInstances = await StorageManager.getInstances()
-      onInstancesChange(updatedInstances)
-    } catch (error) {
-      console.error('GitHub认证失败:', error)
-      alert('GitHub认证失败，请重试')
-    } finally {
-      setLoading(null)
-    }
-  }
-
-  async function handleLogout(instanceId: string) {
-    setLoading(instanceId)
-    try {
-      const { logoutGitHub } = await import('@/lib/github-auth')
-      await logoutGitHub(instanceId)
-
-      const updatedInstances = await StorageManager.getInstances()
-      onInstancesChange(updatedInstances)
-    } catch (error) {
-      console.error('注销失败:', error)
-      alert('注销失败，请重试')
-    } finally {
-      setLoading(null)
-    }
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold mb-2">认证设置</h2>
-        <p className="text-muted-foreground">
-          管理您的 GitHub OAuth 认证设置，用于书签同步功能
-        </p>
-      </div>
-
-      {/* GitHub OAuth 配置 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Github className="w-5 h-5" />
-            GitHub OAuth 配置
-          </CardTitle>
-          <CardDescription>
-            为实例配置 GitHub OAuth，需要在 GitHub 上创建 OAuth App
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="instance-select">选择实例</Label>
-            <select
-              id="instance-select"
-              value={selectedInstance}
-              onChange={(e) => setSelectedInstance(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-md"
-            >
-              <option value="">请选择实例</option>
-              {instances.map((instance) => (
-                <option key={instance.id} value={instance.id}>
-                  {instance.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <Label htmlFor="github-client-id">GitHub Client ID</Label>
-            <Input
-              id="github-client-id"
-              value={githubClientId}
-              onChange={(e) => setGithubClientId(e.target.value)}
-              placeholder="输入您的 GitHub OAuth App Client ID"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              在 GitHub Settings → Developer settings → OAuth Apps 中创建应用获取
-            </p>
-          </div>
-
-          <Button
-            onClick={handleConfigureOAuth}
-            disabled={!selectedInstance || !githubClientId || loading === 'configuring'}
-          >
-            {loading === 'configuring' ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <Key className="w-4 h-4 mr-2" />
-            )}
-            配置 OAuth
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* 实例认证状态 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>实例认证状态</CardTitle>
-          <CardDescription>
-            查看和管理各实例的 GitHub 认证状态
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {instances.length === 0 ? (
-            <p className="text-muted-foreground">请先添加实例</p>
-          ) : (
-            <div className="space-y-4">
-              {instances.map((instance) => (
-                <div key={instance.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${instance.authConfig.isAuthenticated ? 'bg-green-500' : 'bg-gray-300'
-                      }`} />
-                    <div>
-                      <h4 className="font-medium">{instance.name}</h4>
-                      <div className="text-sm text-muted-foreground">
-                        {instance.authConfig.githubClientId ? (
-                          <>
-                            <span>Client ID: {instance.authConfig.githubClientId.slice(0, 8)}...</span>
-                            {instance.authConfig.userInfo && (
-                              <span className="ml-4">
-                                用户: {instance.authConfig.userInfo.login}
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          '未配置 OAuth'
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {instance.authConfig.githubClientId ? (
-                      <>
-                        {instance.authConfig.isAuthenticated ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleLogout(instance.id)}
-                            disabled={loading === instance.id}
-                          >
-                            {loading === instance.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              '注销'
-                            )}
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => handleAuthenticate(instance.id)}
-                            disabled={loading === instance.id}
-                          >
-                            {loading === instance.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                            ) : (
-                              <Github className="w-4 h-4 mr-2" />
-                            )}
-                            认证
-                          </Button>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">请先配置 OAuth</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 帮助信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>设置说明</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="font-medium mb-2">1. 创建 GitHub OAuth App</h4>
-            <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-              <li>• 访问 GitHub Settings → Developer settings → OAuth Apps</li>
-              <li>• 点击 "New OAuth App" 创建新应用</li>
-              <li>• Application name: 填写应用名称（如：NavSphere Extension）</li>
-              <li>• Homepage URL: 填写您的主页或仓库地址</li>
-              <li>• Authorization callback URL: {chrome.identity.getRedirectURL()}</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-medium mb-2">2. 配置 Client ID</h4>
-            <p className="text-sm text-muted-foreground">
-              创建完成后，复制 Client ID 并在上方表单中配置
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-medium mb-2">3. 进行认证</h4>
-            <p className="text-sm text-muted-foreground">
-              配置完成后，点击 "认证" 按钮完成 GitHub OAuth 认证流程
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// 书签同步标签页
-function SyncTab({
-  settings,
-  onSettingsChange
-}: {
-  settings: ExtensionSettings | null
-  onSettingsChange: (settings: ExtensionSettings) => void
-}) {
-  const [instances, setInstances] = useState<NavSphereInstance[]>([])
-  const [loading, setLoading] = useState(false)
-  const [syncProgress, setSyncProgress] = useState<any>(null)
-  const [lastSyncResult, setLastSyncResult] = useState<any>(null)
-  const [bookmarkFolders, setBookmarkFolders] = useState<any[]>([])
-  const [hasBookmarkPermission, setHasBookmarkPermission] = useState(false)
-
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  async function loadData() {
-    try {
-      const [instanceList, hasPermission] = await Promise.all([
-        StorageManager.getInstances(),
-        checkBookmarkPermission()
-      ])
-
-      setInstances(instanceList)
-      setHasBookmarkPermission(hasPermission)
-
-      if (hasPermission) {
-        const folders = await getBookmarkFolders()
-        setBookmarkFolders(folders.filter(f => f.title && f.title !== ''))
-      }
-    } catch (error) {
-      console.error('加载数据失败:', error)
-    }
-  }
-
-  async function handleRequestPermission() {
-    const { requestBookmarkPermission } = await import('@/lib/bookmark-sync')
-    const granted = await requestBookmarkPermission()
-    if (granted) {
-      setHasBookmarkPermission(true)
-      loadData()
-    }
-  }
-
-  async function handleToggleSync(enabled: boolean) {
-    if (!settings) return
-
-    const updated = {
-      ...settings,
-      syncSettings: {
-        ...settings.syncSettings,
-        enabled
-      }
-    }
-
-    await StorageManager.setSettings(updated)
-    onSettingsChange(updated)
-  }
-
-  async function handleUpdateSyncSettings(updates: any) {
-    if (!settings) return
-
-    const updated = {
-      ...settings,
-      syncSettings: {
-        ...settings.syncSettings,
-        ...updates
-      }
-    }
-
-    await StorageManager.setSettings(updated)
-    onSettingsChange(updated)
-  }
-
-  async function handleManualSync(instanceId: string) {
-    setLoading(true)
-    setSyncProgress(null)
-    setLastSyncResult(null)
-
-    try {
-      const { BookmarkSyncManager } = await import('@/lib/bookmark-sync')
-      const syncManager = new BookmarkSyncManager((progress) => {
-        setSyncProgress(progress)
-      })
-
-      const result = await syncManager.syncBookmarks(instanceId)
-      setLastSyncResult(result)
-    } catch (error) {
-      setLastSyncResult({
-        success: false,
-        message: error instanceof Error ? error.message : '同步失败',
-        stats: { totalProcessed: 0, newBookmarks: 0, duplicatesSkipped: 0, errors: 1 }
-      })
-    } finally {
-      setLoading(false)
-      setSyncProgress(null)
-    }
-  }
-
-  const { checkBookmarkPermission, getBookmarkFolders } = React.useMemo(() => {
-    return {
-      checkBookmarkPermission: async () => {
-        try {
-          const { checkBookmarkPermission } = await import('@/lib/bookmark-sync')
-          return await checkBookmarkPermission()
-        } catch {
-          return false
-        }
-      },
-      getBookmarkFolders: async () => {
-        try {
-          const { getBookmarkFolders } = await import('@/lib/bookmark-sync')
-          return await getBookmarkFolders()
-        } catch {
-          return []
-        }
-      }
-    }
-  }, [])
-
-  if (!hasBookmarkPermission) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-semibold mb-2">书签同步</h2>
-          <p className="text-muted-foreground">
-            配置浏览器书签同步设置
-          </p>
-        </div>
-
-        <Card>
-          <CardContent className="py-8 text-center">
-            <Bookmark className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-semibold mb-2">需要书签访问权限</h3>
-            <p className="text-muted-foreground mb-4">
-              扩展需要访问您的书签才能进行同步操作
-            </p>
-            <Button onClick={handleRequestPermission}>
-              <Key className="w-4 h-4 mr-2" />
-              授权访问书签
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold mb-2">书签同步</h2>
-        <p className="text-muted-foreground">
-          将浏览器书签同步到 NavSphere 实例，只会添加新书签，不会删除服务器上的数据
-        </p>
-      </div>
-
-      {/* 同步开关 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sync className="w-5 h-5" />
-            同步设置
-          </CardTitle>
-          <CardDescription>
-            启用书签同步功能
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium">启用书签同步</h4>
-              <p className="text-sm text-muted-foreground">
-                开启后可以同步浏览器书签到 NavSphere
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings?.syncSettings.enabled || false}
-                onChange={(e) => handleToggleSync(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-
-          {settings?.syncSettings.enabled && (
-            <>
-              <div className="space-y-4 pt-4 border-t">
-                <div>
-                  <h4 className="font-medium mb-2">自动同步</h4>
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={settings.syncSettings.autoSync}
-                        onChange={(e) => handleUpdateSyncSettings({ autoSync: e.target.checked })}
-                      />
-                      <span className="text-sm">启用自动同步</span>
-                    </label>
-
-                    {settings.syncSettings.autoSync && (
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="sync-interval" className="text-sm">间隔:</Label>
-                        <select
-                          id="sync-interval"
-                          value={settings.syncSettings.interval}
-                          onChange={(e) => handleUpdateSyncSettings({ interval: parseInt(e.target.value) })}
-                          className="px-2 py-1 border rounded text-sm"
-                        >
-                          <option value={1800000}>30分钟</option>
-                          <option value={3600000}>1小时</option>
-                          <option value={7200000}>2小时</option>
-                          <option value={21600000}>6小时</option>
-                          <option value={43200000}>12小时</option>
-                          <option value={86400000}>24小时</option>
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium mb-2">排除文件夹</h4>
-                  <div className="space-y-2">
-                    {['其他书签', 'Mobile Bookmarks', '最近添加的书签'].map(folder => (
-                      <label key={folder} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={settings.syncSettings.excludedFolders.includes(folder)}
-                          onChange={(e) => {
-                            const excludedFolders = e.target.checked
-                              ? [...settings.syncSettings.excludedFolders, folder]
-                              : settings.syncSettings.excludedFolders.filter(f => f !== folder)
-                            handleUpdateSyncSettings({ excludedFolders })
-                          }}
-                        />
-                        <span className="text-sm">{folder}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 手动同步 */}
-      {settings?.syncSettings.enabled && (
-        <Card>
-          <CardHeader>
-            <CardTitle>手动同步</CardTitle>
-            <CardDescription>
-              立即同步书签到选定的 NavSphere 实例
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {instances.length === 0 ? (
-              <p className="text-muted-foreground">请先添加并认证 NavSphere 实例</p>
-            ) : (
-              <>
-                {instances.map((instance) => (
-                  <div key={instance.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${instance.authConfig.isAuthenticated ? 'bg-green-500' : 'bg-gray-300'
-                        }`} />
-                      <div>
-                        <h4 className="font-medium">{instance.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {instance.authConfig.isAuthenticated ? '已认证' : '未认证'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={() => handleManualSync(instance.id)}
-                      disabled={!instance.authConfig.isAuthenticated || loading}
-                      size="sm"
-                    >
-                      {loading ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <Sync className="w-4 h-4 mr-2" />
-                      )}
-                      同步
-                    </Button>
-                  </div>
-                ))}
-
-                {/* 同步进度 */}
-                {syncProgress && (
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">{syncProgress.message}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {syncProgress.current}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${syncProgress.current}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* 同步结果 */}
-                {lastSyncResult && (
-                  <div className={`p-4 rounded-lg ${lastSyncResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                    } border`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      {lastSyncResult.success ? (
-                        <Check className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <X className="w-5 h-5 text-red-600" />
-                      )}
-                      <span className={`font-medium ${lastSyncResult.success ? 'text-green-800' : 'text-red-800'
-                        }`}>
-                        {lastSyncResult.message}
-                      </span>
-                    </div>
-
-                    {lastSyncResult.success && (
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <p>• 处理书签: {lastSyncResult.stats.totalProcessed} 个</p>
-                        <p>• 新增书签: {lastSyncResult.stats.newBookmarks} 个</p>
-                        <p>• 跳过重复: {lastSyncResult.stats.duplicatesSkipped} 个</p>
-                        {lastSyncResult.stats.errors > 0 && (
-                          <p>• 错误: {lastSyncResult.stats.errors} 个</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 同步状态 */}
-      {settings?.syncSettings.enabled && settings.syncSettings.lastSyncTime > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>同步历史</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              上次同步时间: {new Date(settings.syncSettings.lastSyncTime).toLocaleString()}
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

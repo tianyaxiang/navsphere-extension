@@ -101,21 +101,6 @@ export async function getCurrentActiveInstance(): Promise<any> {
 }
 
 /**
- * 获取当前活跃且已认证的NavSphere实例
- * @returns Promise<NavSphereInstance> 当前活跃且已认证的实例
- * @throws Error 当实例未认证时
- */
-export async function getCurrentAuthenticatedInstance(): Promise<any> {
-  const instance = await getCurrentActiveInstance()
-  
-  if (!instance.authConfig?.isAuthenticated) {
-    throw new Error('实例未认证，请先完成认证')
-  }
-
-  return instance
-}
-
-/**
  * 根据ID获取NavSphere实例的通用方法
  * @param instanceId 实例ID
  * @returns Promise<NavSphereInstance> 指定的实例
@@ -129,22 +114,6 @@ export async function getInstanceById(instanceId: string): Promise<any> {
   
   if (!instance) {
     throw new Error(`实例不存在: ${instanceId}`)
-  }
-
-  return instance
-}
-
-/**
- * 根据ID获取已认证的NavSphere实例
- * @param instanceId 实例ID
- * @returns Promise<NavSphereInstance> 指定的已认证实例
- * @throws Error 当实例不存在或未认证时
- */
-export async function getAuthenticatedInstanceById(instanceId: string): Promise<any> {
-  const instance = await getInstanceById(instanceId)
-  
-  if (!instance.authConfig?.isAuthenticated) {
-    throw new Error(`实例未认证: ${instance.name || instanceId}`)
   }
 
   return instance

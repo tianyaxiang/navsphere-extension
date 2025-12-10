@@ -42,24 +42,8 @@ export interface NavSphereInstance {
   favicon?: string
   description?: string
   title?: string
-  authConfig: {
-    githubClientId?: string
-    isAuthenticated: boolean
-    accessToken?: string
-    refreshToken?: string
-    userInfo?: GitHubUser
-    tokenExpiry?: number
-  }
   createdAt: number
   lastUsed: number
-}
-
-export interface GitHubUser {
-  id: number
-  login: string
-  name: string
-  avatar_url: string
-  email?: string
 }
 
 export interface PageInfo {
@@ -78,36 +62,9 @@ export interface QuickAddData {
   customDescription?: string
 }
 
-export interface BookmarkFolder {
-  id: string
-  title: string
-  children?: BookmarkItem[]
-  parentId?: string
-}
-
-export interface BookmarkItem {
-  id: string
-  title: string
-  url?: string
-  favicon?: string
-  dateAdded?: number
-  parentId?: string
-  children?: BookmarkItem[]
-}
-
-export interface SyncSettings {
-  enabled: boolean
-  interval: number // milliseconds
-  selectedFolders: string[]
-  excludedFolders: string[]
-  lastSyncTime: number
-  autoSync: boolean
-}
-
 export interface ExtensionSettings {
   defaultInstanceId?: string
   theme: 'light' | 'dark' | 'system'
-  syncSettings: SyncSettings
   shortcuts: {
     quickAdd: string
   }

@@ -1,5 +1,5 @@
 // 内容脚本 - 在网页中运行，获取页面信息
-import { getCurrentAuthenticatedInstance } from '@/lib/utils'
+import { getCurrentActiveInstance } from '@/lib/utils'
 
 // 获取页面元数据 - 通过API调用
 async function getPageMetadata() {
@@ -27,14 +27,13 @@ async function getPageMetadata() {
 
 // 调用网站API获取元数据
 async function fetchWebsiteMetadata(url: string) {
-  // 使用通用方法获取当前活跃且已认证的NavSphere实例
-  const targetInstance = await getCurrentAuthenticatedInstance()
+  // 使用通用方法获取当前活跃的NavSphere实例
+  const targetInstance = await getCurrentActiveInstance()
 
   const response = await fetch(`${targetInstance.apiUrl}/api/website-metadata`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${targetInstance.authConfig.accessToken}`,
     },
     body: JSON.stringify({ url }),
   })

@@ -11,6 +11,7 @@ Thumbs.db
 
 # Extension build outputs
 web-ext-artifacts/
+releases/
 *.zip
 *.crx
 *.xpi

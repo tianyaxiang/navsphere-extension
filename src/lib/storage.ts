@@ -10,14 +10,6 @@ const STORAGE_KEYS = {
 const DEFAULT_SETTINGS: ExtensionSettings = {
   defaultInstanceId: 'default-official',
   theme: 'system',
-  syncSettings: {
-    enabled: false,
-    interval: 3600000, // 1小时
-    selectedFolders: [],
-    excludedFolders: ['其他书签', 'Mobile Bookmarks'],
-    lastSyncTime: 0,
-    autoSync: false,
-  },
   shortcuts: {
     quickAdd: 'Ctrl+Shift+A',
   },
@@ -33,9 +25,6 @@ const DEFAULT_INSTANCE: NavSphereInstance = {
   favicon: 'https://dh.leti.ltd/favicon.ico',
   description: 'NavSphere 官方实例',
   title: 'NavSphere 官方导航',
-  authConfig: {
-    isAuthenticated: true,
-  },
   createdAt: Date.now(),
   lastUsed: Date.now(),
 }
